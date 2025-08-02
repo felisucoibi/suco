@@ -11,8 +11,8 @@
 
 - Se abre en **modo pantalla completa** por defecto  
   Launches in **fullscreen mode** by default
-- **Guarda partidas** automáticamente  
-  **Saves progress** automatically
+- **Soporta salvado de archivos si el juego lo precisa, fuera del AppImage**  
+  **Supports external file saving if the game requires it, outside the AppImage**
 - Todo incluido: DOSBox, juego, configuración, y extras  
   All-in-one: DOSBox, game files, config, and extras
 - Un único archivo `.suco` por juego  
