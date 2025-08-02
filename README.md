@@ -5,6 +5,23 @@
 
 ## 🚀 ¿Cómo usarlo? / How to use it?
 
+### 📥 Descarga rápida / Quick Start
+
+1. 📦 **Bájate el .zip desde aquí**  
+   Download the `.zip` from here (GitHub Releases o sitio web del proyecto)
+
+2. 📂 **Descomprímelo** en una carpeta de tu elección  
+   Extract it anywhere
+
+3. ✅ **Dale permisos de ejecución al script**  
+   Give execute permissions to the script:
+
+   ```bash
+   chmod +x suco.sh
+   ```
+
+---
+
 ### 🔧 Requisitos / Requirements
 
 - Linux con `bash`, `wget`, `rsync`, `unzip` y `dosbox` instalados  
