@@ -1,91 +1,136 @@
 # .suco — Juegos MS-DOS en formato one-click para Linux  
 ### .suco — One-click MS-DOS games for Linux
 
-**.suco** es un proyecto personal para empaquetar juegos clásicos (inicialmente de MS-DOS) en archivos AppImage autoejecutables. El objetivo es ofrecer una experiencia "doble clic y a jugar" — sin configuraciones, sin instalaciones, sin complicaciones.
+---
 
-**.suco** is a personal project to package classic games (starting with MS-DOS) into self-contained AppImage executables. The goal is a true *double-click-and-play* experience — no setup, no installation, no hassle.
+## 🚀 ¿Cómo usarlo? / How to use it?
+
+### 🔧 Requisitos / Requirements
+
+- Linux con `bash`, `wget`, `rsync`, y `dosbox` instalados.  
+  Linux with `bash`, `wget`, `rsync`, and `dosbox` installed.
+- El script `suco.sh` incluido.  
+  The `suco.sh` script included.
+- El juego (ejecutable y recursos) debe estar en la carpeta `game/`.  
+  The game (executable and resources) must be placed in the `game/` folder.
+
+### 🛠️ Instrucciones rápidas / Quick Instructions
+
+```bash
+./suco.sh "Nombre del Juego" EJECUTABLE.EXE
+./suco.sh "Game Name" EXECUTABLE.EXE
+```
+
+Ejemplo / Example:
+
+```bash
+./suco.sh "Doom 1" DOOM.EXE
+```
+
+📦 El script hace lo siguiente / The script does the following:
+1. Verifica dependencias. / Checks dependencies.
+2. Crea la estructura AppImage con los archivos del juego. / Creates the AppImage structure with the game files.
+3. Descarga herramientas si es necesario. / Downloads tools if needed.
+4. Genera un archivo `.suco` (AppImage) que puedes ejecutar con doble clic.  
+   Generates a `.suco` (AppImage) file you can launch with double-click.
+
+🗃️ El archivo final estará en / The final file will be in:  
+`games/Nombre_del_Juego/Nombre_del_Juego-x86_64.suco`
+
+Este `.suco`:  
+This `.suco`:
+
+- Es autocontenido. / Is self-contained.  
+- Se abre en pantalla completa. / Opens in fullscreen mode.  
+- Soporta guardado externo si el juego lo necesita. / Supports external file saving if needed.  
+- Puede desempaquetarse y auditarse. / Can be extracted and audited.
 
 ---
 
 ## ✅ Características actuales / Current Features
 
-- Se abre en **modo pantalla completa** por defecto  
-  Launches in **fullscreen mode** by default
-- **Soporta salvado de archivos si el juego lo precisa, fuera del AppImage**  
-  **Supports external file saving if the game requires it, outside the AppImage**
-- Todo incluido: DOSBox, juego, configuración, y extras  
-  All-in-one: DOSBox, game files, config, and extras
+- Modo pantalla completa por defecto  
+  Fullscreen mode by default
+- Soporta salvado de archivos fuera del AppImage si el juego lo necesita  
+  Supports saving files outside the AppImage if the game requires it
+- Todo incluido: DOSBox, juego, configuración, extras  
+  All-in-one: DOSBox, game, config, and extras
 - Un único archivo `.suco` por juego  
-  Single `.suco` file per game (AppImage format)
+  One single `.suco` file per game
 
 ---
 
 ## 🎯 ¿Por qué este proyecto? / Why this project?
 
-Los frontends y emuladores existentes requieren instalación, configuración y búsqueda manual del ejecutable.  
-Existing frontends and emulators require installation, setup, and manual launching.
+Los emuladores actuales requieren instalación y configuración manual.  
+Most emulators require manual setup and configuration.
 
-**.suco** simplifica todo. Como una consola retro en tu PC.  
-**.suco** makes it simple. Like a retro console experience on your PC.
+**.suco** simplifica todo: como una consola retro en tu PC.  
+**.suco** simplifies everything: like a retro console on your PC.
 
 ---
 
 ## 💡 Filosofía / Philosophy
 
-- **Comodidad ante todo** / **Convenience first**
-- **Formato autocontenido** / **Self-contained format**
-- **Sin instalación** / **No installation needed**
-- **Listo para jugar** / **Plug & play feeling**
+- Comodidad ante todo / Convenience first  
+- Formato autocontenido / Self-contained format  
+- Sin instalación / No installation  
+- Plug & Play / Just double-click and play
 
 ---
 
 ## 📚 Ejemplo / Example
 
 En *Fate of Atlantis*, incluí manuales y extras originales dentro del `.suco`.  
-Ayer, sin configurar nada, simplemente hice doble clic y estuve jugando.  
-In *Fate of Atlantis*, I included original manuals and PDFs inside the `.suco`.  
-Yesterday, without any setup, I just double-clicked and played.
+In *Fate of Atlantis*, I included original manuals and extras inside the `.suco`.
+
+Ayer simplemente hice doble clic y jugué sin configurar nada.  
+Yesterday I just double-clicked and played without any setup.
 
 ---
 
 ## ⚙️ Consideraciones técnicas / Technical Notes
 
-- Soporta arquitectura **x86_64** por ahora  
-  Currently supports **x86_64**
+- Actualmente solo para **x86_64**  
+  Currently only for **x86_64**
 - Explorando soporte para / Exploring support for:
   - ARMv7
   - AArch64
   - RISC-V
-- Archivos `.suco` = AppImage:  
-  `.suco` files are AppImages:
-  - Se pueden desempaquetar (`--appimage-extract`)  
-    Can be extracted with `--appimage-extract`
-  - Se pueden analizar con VirusTotal  
-    Can be scanned with VirusTotal
-  - Planeo liberar el código  
-    Planning to open-source the project
+
+### Seguridad / Security
+
+- Los `.suco` son archivos AppImage.  
+  `.suco` files are AppImages.
+- Se pueden desempaquetar (`--appimage-extract`).  
+  They can be unpacked (`--appimage-extract`).
+- Se pueden analizar con VirusTotal.  
+  Can be scanned with VirusTotal.
+- ✅ El código ya es software libre.  
+  ✅ The project is already open source.
 
 ---
 
-## 📋 To-do
+## 📋 Tareas pendientes / To-do
 
-- [ ] Incluir soporte para múltiples arquitecturas (ARM, RISC-V, etc.)  
-      Add support for multiple architectures (ARM, RISC-V, etc.)
-- [ ] Hacer el proyecto **software libre**  
-      Make the project **open source**
-- [ ] Establecer una nomenclatura útil y extensión oficial `.suco`  
-      Establish a useful naming system and `.suco` as an official extension
-- [ ] Crear una versión para **Windows y otros sistemas operativos**  
-      Create a version for **Windows and other operating systems**
+- [ ] Soporte para arquitecturas ARM, RISC-V, etc.  
+      Support for ARM, RISC-V, etc.
+- ✅ Hacer el proyecto software libre  
+      ✅ Make the project open source
+- ✅ Establecer un sistema de nombres y extensión `.suco` oficial  
+      ✅ Define naming system and official `.suco` extension
+- [ ] Crear versión para Windows y otros sistemas operativos  
+      Create Windows and cross-platform versions
 
 ---
 
 ## 🕹️ Objetivo a largo plazo / Long-term Goal
 
 Convertir mi colección de MS-DOS de la infancia al formato `.suco`.  
-También explorar otros sistemas:  
-Convert my childhood MS-DOS game collection into `.suco` format.  
-Also considering other platforms:
+Convert my childhood MS-DOS collection into `.suco` format.
+
+Explorar otros sistemas:  
+Explore other platforms:
 
 - Microordenadores clásicos / Classic microcomputers  
 - Consolas retro / Retro consoles  
@@ -98,4 +143,4 @@ Also considering other platforms:
 **Felisuco**  
 Agosto / August 2025  
 Proyecto personal hecho con nostalgia y pasión retro.  
-A personal project built with nostalgia and retro passion.
+A personal project made with nostalgia and retro passion.
