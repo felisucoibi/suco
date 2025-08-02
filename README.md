@@ -12,18 +12,7 @@
 
 ---
 
-### 📦 Instalación de dependencias en Ubuntu / Install dependencies on Ubuntu
-
-```bash
-sudo apt update && sudo apt install -y dosbox wget unzip rsync
-```
-
-Esto instala todo lo necesario para ejecutar `suco.sh`.  
-This installs all required packages to run `suco.sh`.
-
----
-
-### 🐧 Compatibilidad con otras distribuciones / Compatibility with other Linux distributions
+### 📦 Instalación de dependencias
 
 A continuación, los comandos para instalar las dependencias en las principales distribuciones:  
 Below are commands to install dependencies on popular distributions:
