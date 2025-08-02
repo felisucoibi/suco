@@ -1,82 +1,101 @@
-# .suco — Juegos MS-DOS en formato one-click para Linux
+# .suco — Juegos MS-DOS en formato one-click para Linux  
+### .suco — One-click MS-DOS games for Linux
 
-**.suco** es un proyecto personal para empaquetar juegos clásicos (inicialmente de MS-DOS pero tal evz también de otros sistemas) en archivos AppImage autoejecutables con algunas mejoras. El objetivo es ofrecer una experiencia "doble clic y a jugar" — sin configuraciones, sin instalaciones, sin complicaciones.
+**.suco** es un proyecto personal para empaquetar juegos clásicos (inicialmente de MS-DOS) en archivos AppImage autoejecutables. El objetivo es ofrecer una experiencia "doble clic y a jugar" — sin configuraciones, sin instalaciones, sin complicaciones.
 
----
-
-## ✅ Características actuales
-
-- Se abre en **modo pantalla completa** por defecto.
-- **Guarda partidas** automáticamente si el juego lo soporta fuera del appimage.
-- Todo incluido: emulador DOSBox, juego, configuraciones, y si aplica, manuales y extras.
-- Un solo archivo `.suco` para cada juego: portátil, simple, directo.
+**.suco** is a personal project to package classic games (starting with MS-DOS) into self-contained AppImage executables. The goal is a true *double-click-and-play* experience — no setup, no installation, no hassle.
 
 ---
 
-## 🎯 ¿Por qué este proyecto?
+## ✅ Características actuales / Current Features
 
-Existen frontends y emuladores, pero la mayoría requieren:
-
-- Instalar dependencias
-- Configurar rutas
-- Cargar manualmente el ejecutable
-
-**.suco** nace para evitar todo eso. Quiero poder tener mis juegos favoritos siempre listos para lanzar con un doble clic, como si fuera una consola retro, directamente en mi PC.
-
----
-
-## 💡 Filosofía de diseño
-
-- **Comodidad ante todo**: jugar debe ser inmediato.
-- **Formato autocontenido**: todo va dentro del `.suco` (AppImage).
-- **Sin instalación**: portátil y ejecutable desde cualquier ubicación.
-- **Experiencia retro simplificada**: como una consola de los 90, pero en 2025.
+- Se abre en **modo pantalla completa** por defecto  
+  Launches in **fullscreen mode** by default
+- **Guarda partidas** automáticamente  
+  **Saves progress** automatically
+- Todo incluido: DOSBox, juego, configuración, y extras  
+  All-in-one: DOSBox, game files, config, and extras
+- Un único archivo `.suco` por juego  
+  Single `.suco` file per game (AppImage format)
 
 ---
 
-## 📚 Ejemplo práctico
+## 🎯 ¿Por qué este proyecto? / Why this project?
 
-He incluido en el pack de *Indiana Jones and the Fate of Atlantis* todos los manuales y extras originales. Ayer, por primera vez en mucho tiempo, me puse a jugar sin buscar el SCUMMVM, sin configurar nada, sin pensar. Solo hice doble clic y estuve un buen rato disfrutando.
+Los frontends y emuladores existentes requieren instalación, configuración y búsqueda manual del ejecutable.  
+Existing frontends and emulators require installation, setup, and manual launching.
+
+**.suco** simplifica todo. Como una consola retro en tu PC.  
+**.suco** makes it simple. Like a retro console experience on your PC.
 
 ---
 
-## ⚙️ Consideraciones técnicas
+## 💡 Filosofía / Philosophy
 
-- Actualmente soportado en arquitectura **x86_64**.
-- Se están explorando opciones para incluir versiones de DOSBox para:
+- **Comodidad ante todo** / **Convenience first**
+- **Formato autocontenido** / **Self-contained format**
+- **Sin instalación** / **No installation needed**
+- **Listo para jugar** / **Plug & play feeling**
+
+---
+
+## 📚 Ejemplo / Example
+
+En *Fate of Atlantis*, incluí manuales y extras originales dentro del `.suco`.  
+Ayer, sin configurar nada, simplemente hice doble clic y estuve jugando.  
+In *Fate of Atlantis*, I included original manuals and PDFs inside the `.suco`.  
+Yesterday, without any setup, I just double-clicked and played.
+
+---
+
+## ⚙️ Consideraciones técnicas / Technical Notes
+
+- Soporta arquitectura **x86_64** por ahora  
+  Currently supports **x86_64**
+- Explorando soporte para / Exploring support for:
   - ARMv7
   - AArch64
-  - RISC-V  
-  Esto requerirá pruebas adicionales.
-
-- Aunque el tamaño de cada `.suco` es mayor que un ROM suelto, la comodidad lo compensa.
-- Los archivos `.suco` son simplemente AppImages:
-  - Se pueden abrir (`--appimage-extract`)
-  - Se pueden auditar o analizar con herramientas como VirusTotal
-  - Planeo liberar el código para que puedas crear los tuyos
-
----
-
-## 📦 To-do
-
-- [ ] Incluir soporte para múltiples arquitecturas (ARM, RISC-V, etc.).
-- [ ] Hacer el proyecto **software libre**.
-- [ ] Establecer una nomenclatura útil para archivar los juegos y oficializar la extensión `.suco`.
+  - RISC-V
+- Archivos `.suco` = AppImage:  
+  `.suco` files are AppImages:
+  - Se pueden desempaquetar (`--appimage-extract`)  
+    Can be extracted with `--appimage-extract`
+  - Se pueden analizar con VirusTotal  
+    Can be scanned with VirusTotal
+  - Planeo liberar el código  
+    Planning to open-source the project
 
 ---
 
-## 🕹️ Objetivo a largo plazo
+## 📋 To-do
 
-Convertir toda mi colección de infancia de MS-DOS a este formato. También estoy valorando la posibilidad de incluir sistemas como:
-
-- Microordenadores clásicos
-- Consolas retro
-- Otros juegos que requieran emulador
+- [ ] Incluir soporte para múltiples arquitecturas (ARM, RISC-V, etc.)  
+      Add support for multiple architectures (ARM, RISC-V, etc.)
+- [ ] Hacer el proyecto **software libre**  
+      Make the project **open source**
+- [ ] Establecer una nomenclatura útil y extensión oficial `.suco`  
+      Establish a useful naming system and `.suco` as an official extension
+- [ ] Crear una versión para **Windows y otros sistemas operativos**  
+      Create a version for **Windows and other operating systems**
 
 ---
 
-## ✍️ Autor
+## 🕹️ Objetivo a largo plazo / Long-term Goal
+
+Convertir mi colección de MS-DOS de la infancia al formato `.suco`.  
+También explorar otros sistemas:  
+Convert my childhood MS-DOS game collection into `.suco` format.  
+Also considering other platforms:
+
+- Microordenadores clásicos / Classic microcomputers  
+- Consolas retro / Retro consoles  
+- Juegos que requieran emulador / Emulator-based games
+
+---
+
+## ✍️ Autor / Author
 
 **Felisuco**  
-Agosto de 2025  
-Proyecto personal, hecho con nostalgia, paciencia y un toque de obsesión retro.
+Agosto / August 2025  
+Proyecto personal hecho con nostalgia y pasión retro.  
+A personal project built with nostalgia and retro passion.
