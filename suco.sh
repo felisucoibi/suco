@@ -26,7 +26,7 @@ ICON_NAME="icon.png"
 APPIMAGE_TOOL_NAME="appimagetool-x86_64.AppImage"
 LICENSE_FILE_NAME="gpl-3.0.txt"
 MAIN_GAMES_DIR="games"
-INTERNAL_GAME_DIR="game" # Consistent internal folder name in the AppImage
+INTERNAL_GAME_DIR="game"
 VERBOSE=false
 
 # --- 1. INTERNATIONALIZATION (i18n) ---
@@ -66,11 +66,11 @@ if [[ $LANG == es* ]]; then
     STR_APPSTREAM_SUMMARY="Proyecto .suco, one file, one game."
     STR_APPSTREAM_DESC="<p>Versión portable de ${APP_NAME}, empaquetada por felisuco para ser ejecutada con DOSBox.</p>"
     STR_H4_PACKAGE="### Generando el archivo AppImage final..."
-    STR_INFO_CREATING_OUTPUT_DIR="-> Creando directorio de salida y renombrando la AppImage..."
+    STR_INFO_CREATING_OUTPUT_DIR="-> Creando directorio de salida y renombrando el archivo..."
     STR_INFO_CLEANING_TEMP="-> Limpiando directorio temporal de compilación..."
     STR_INFO_CLEANING_UNZIP="-> Limpiando archivos temporales de descompresión..."
     STR_FINAL_SUCCESS="### ¡PROCESO COMPLETADO! ###"
-    STR_FINAL_READY="✅ Tu archivo (con licencia GPLv3) está listo en la carpeta:"
+    STR_FINAL_READY="✅ Tu archivo está listo en la carpeta:"
     STR_FINAL_FILENAME="Nombre del archivo:"
     STR_FINAL_LAUNCHING="🚀 Ejecutando el juego para probar..."
 else
@@ -109,11 +109,11 @@ else
     STR_APPSTREAM_SUMMARY=".suco project, one file, one game."
     STR_APPSTREAM_DESC="<p>Portable version of ${APP_NAME}, packaged by felisuco to be run with DOSBox.</p>"
     STR_H4_PACKAGE="### Generating final AppImage file..."
-    STR_INFO_CREATING_OUTPUT_DIR="-> Creating output directory and renaming the AppImage..."
+    STR_INFO_CREATING_OUTPUT_DIR="-> Creating output directory and renaming the file..."
     STR_INFO_CLEANING_TEMP="-> Cleaning up temporary build directory..."
     STR_INFO_CLEANING_UNZIP="-> Cleaning up temporary unzipped files..."
     STR_FINAL_SUCCESS="### PROCESS COMPLETE! ###"
-    STR_FINAL_READY="✅ Your file (with GPLv3 license) is ready in the folder:"
+    STR_FINAL_READY="✅ Your file is ready in the folder:"
     STR_FINAL_FILENAME="Filename:"
     STR_FINAL_LAUNCHING="🚀 Launching the game for a test run..."
 fi
@@ -125,11 +125,11 @@ GAME_SOURCE_DIR_PATH="${BASE_SOURCE_DIR}/${APP_NAME}"
 GAME_SOURCE_ZIP_PATH="${BASE_SOURCE_DIR}/${APP_NAME}.zip"
 CONFIG_NAME="dosbox.conf"
 APP_DIR="${APP_NAME}.AppDir"
-FINAL_OUTPUT_DIR="${MAIN_GAMES_DIR}/${APP_NAME}"
+FINAL_OUTPUT_DIR="$MAIN_GAMES_DIR"
 APPIMAGE_TOOL_PATH="${ASSETS_DIR}/${APPIMAGE_TOOL_NAME}"
 LICENSE_FILE_PATH="${ASSETS_DIR}/${LICENSE_FILE_NAME}"
 ICON_PATH="${ASSETS_DIR}/${ICON_NAME}"
-EFFECTIVE_SOURCE_PATH="" 
+EFFECTIVE_SOURCE_PATH=""
 CLEANUP_TEMP_DIR=false
 
 # --- COLOR CODES ---
@@ -156,25 +156,20 @@ fi
 # --- 3. DEPENDENCY AND SOURCE CHECKS ---
 echo -e "${YELLOW}${STR_H1_VALIDATION}${NC}"
 
-# Check for software dependencies first
 if ! command -v dosbox &> /dev/null; then echo -e "${RED}${STR_ERR_NO_DOSBOX}${NC}"; exit 1; fi
 if ! command -v wget &> /dev/null; then echo -e "${RED}${STR_ERR_NO_WGET}${NC}"; exit 1; fi
 if ! command -v rsync &> /dev/null; then echo -e "${RED}${STR_ERR_NO_RSYNC}${NC}"; exit 1; fi
 if ! command -v unzip &> /dev/null; then echo -e "${RED}${STR_ERR_NO_UNZIP}${NC}"; exit 1; fi
 
-# Check for game source (directory or .zip file)
 if [ -d "$GAME_SOURCE_DIR_PATH" ]; then
-    # Directory exists, use it
     EFFECTIVE_SOURCE_PATH="$GAME_SOURCE_DIR_PATH"
 elif [ -f "$GAME_SOURCE_ZIP_PATH" ]; then
-    # .zip file exists, unzip to temporary location
     log_verbose "${STR_INFO_FOUND_ZIP}"
     TEMP_UNZIP_DIR=$(mktemp -d)
     unzip -q "$GAME_SOURCE_ZIP_PATH" -d "$TEMP_UNZIP_DIR"
     EFFECTIVE_SOURCE_PATH="$TEMP_UNZIP_DIR"
     CLEANUP_TEMP_DIR=true
 else
-    # Neither exists, show error
     echo -e "${RED}${STR_ERR_NO_SOURCE}${NC}"
     echo "${STR_INFO_EXPECTED_PATH}"
     echo " 1) ./${GAME_SOURCE_DIR_PATH}/"
@@ -182,11 +177,9 @@ else
     exit 1
 fi
 
-# Check if the effective source path is empty
 if [ -z "$(ls -A "$EFFECTIVE_SOURCE_PATH")" ]; then
     echo -e "${RED}${STR_ERR_EMPTY_FOLDER} (${EFFECTIVE_SOURCE_PATH})${NC}"
     echo "${STR_INFO_EMPTY_FOLDER_HINT}"
-    # Clean up temp dir if we created one before exiting
     if [ "$CLEANUP_TEMP_DIR" = true ]; then rm -rf "$EFFECTIVE_SOURCE_PATH"; fi
     exit 1
 fi
@@ -198,10 +191,8 @@ mkdir -p "$ASSETS_DIR"
 
 if [ ! -f "$APPIMAGE_TOOL_PATH" ]; then
     log_verbose "${STR_INFO_DOWNLOAD_APPIMAGETOOL}"
-    # Use stable "latest" release link
     wget -O "$APPIMAGE_TOOL_PATH" "https://github.com/AppImage/AppImageKit/releases/latest/download/$APPIMAGE_TOOL_NAME"
 fi
-# Ensure it's executable on every run
 chmod +x "$APPIMAGE_TOOL_PATH"
 
 if [ ! -f "$LICENSE_FILE_PATH" ]; then
@@ -215,7 +206,8 @@ if [ ! -f "$APPIMAGE_TOOL_PATH" ] || [ ! -f "$LICENSE_FILE_PATH" ]; then
 fi
 log_verbose "${STR_INFO_CLEANING}"
 rm -rf "$APP_DIR"
-rm -rf "$FINAL_OUTPUT_DIR"
+# Se elimina la limpieza del directorio de salida para no borrar toda la carpeta 'games'
+# rm -rf "$FINAL_OUTPUT_DIR"
 mkdir -p "${APP_DIR}/usr/bin"
 
 # --- 5. COPY AND GENERATE FILES ---
@@ -312,7 +304,7 @@ fi
 FINAL_FILENAME="${APP_NAME}-x86_64.suco"
 log_verbose "${STR_INFO_CREATING_OUTPUT_DIR}"
 mkdir -p "$FINAL_OUTPUT_DIR"
-mv "$SOURCE_APPIMAGE_FILENAME" "$FINAL_OUTPUT_DIR/${FINAL_FILENAME}"
+mv "$SOURCE_APPIMAGE_FILENAME" "${FINAL_OUTPUT_DIR}/${FINAL_FILENAME}"
 
 log_verbose "${STR_INFO_CLEANING_TEMP}"
 rm -rf "$APP_DIR"
