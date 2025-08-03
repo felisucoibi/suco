@@ -72,8 +72,15 @@ sudo zypper install dosbox wget unzip rsync
 
 Ejemplo / Example:
 
+In "/msdos/Doom 1" we have the doom files.
+
 ```bash
 ./sucomsdos.sh "Doom 1" DOOM.EXE
+```
+
+In "/roms/nes/nemo.nes" we have the nes game.
+
+```bash
 ./sucoarch.sh "nemo.nes"
 ```
 
@@ -130,16 +137,6 @@ Most emulators require setup and configuration
 - Formato autocontenido / Self-contained format  
 - Sin instalación / No installation  
 - Plug & Play / Just double-click and play
-
----
-
-## 📚 Ejemplo / Example
-
-En *Fate of Atlantis*, incluí manuales y extras originales dentro del `.suco`  
-In *Fate of Atlantis*, I included original manuals and extras inside the `.suco`
-
-Ayer simplemente hice doble clic y jugué sin configurar nada  
-Yesterday I just double-clicked and played without setup
 
 ---
 
