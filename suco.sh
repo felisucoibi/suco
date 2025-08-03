@@ -3,20 +3,20 @@
 # suco.sh - Proyecto .suco, one file, one game.
 # Copyright (C) 2025 felisuco
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# Este programa es software libre: puede redistribuirlo y/o modificarlo
+# bajo los términos de la Licencia Pública General de GNU tal como está
+# publicada por la Free Software Foundation, ya sea la versión 3 de la Licencia,
+# o (a su elección) cualquier versión posterior.
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU General Public License for more details.
+# Este programa se distribuye con la esperanza de que sea útil,
+# pero SIN NINGUNA GARANTÍA; sin siquiera la garantía implícita de
+# COMERCIALIZACIÓN o IDONEIDAD PARA UN PROPÓSITO PARTICULAR. Ver
+# la Licencia Pública General de GNU para más detalles.
 #
-# You should have received a copy of the GNU General Public License
-# along with this program. If not, see <https://www.gnu.org/licenses/>.
+# Debería haber recibido una copia de la Licencia Pública General de GNU
+# junto con este programa. Si no, vea <https://www.gnu.org/licenses/>.
 
-# Script to create a professional DOSBox game AppImage.
+# Script para crear un AppImage profesional para juegos de DOSBox.
 set -e
 
 # --- CONFIGURATION ---
@@ -93,13 +93,13 @@ else
     STR_INFO_DOWNLOAD_LICENSE="-> Downloading GPLv3 license text into '$ASSETS_DIR' folder..."
     STR_ERR_DOWNLOAD_FAILED="Error: Could not download the required assets. Check your internet connection and try again."
     STR_INFO_CLEANING="-> Cleaning up and creating folder structure..."
-    STR_H3_GENERATE="### Copying and generating files..."
+    STR_H3_GENERATE="### Copiando y generando archivos..."
     STR_INFO_FOUND_ZIP="-> .zip file found. Unzipping to a temporary folder..."
-    STR_INFO_COPYING_FILES="-> Copying game and DOSBox files..."
+    STR_INFO_COPYING_FILES="-> Copiando archivos del juego y DOSBox..."
     STR_INFO_CREATING_CONFIG="-> Creating DOSBox configuration file..."
     STR_INFO_CREATING_APP_RUN="-> Creating smart AppRun with persistence logic..."
     STR_INFO_CREATING_DESKTOP="-> Creating .desktop file..."
-    STR_INFO_ICON_FOUND="-> Icon '$ICON_NAME' found in '$ASSETS_DIR'. Copying..."
+    STR_INFO_ICON_FOUND="-> Icon '$ICON_NAME' found in '$ASSETS_DIR'. Copiando..."
     STR_WARN_NO_ICON="-> Warning: Icon '$ICON_NAME' not found in '$ASSETS_DIR' folder. It will be created without an icon."
     STR_INFO_CREATING_METADATA="-> Creating license metadata (AppStream)..."
     STR_INFO_COPYING_LICENSE="-> Copying license file from '$ASSETS_DIR'..."
@@ -115,7 +115,7 @@ else
     STR_FINAL_SUCCESS="### PROCESS COMPLETE! ###"
     STR_FINAL_READY="✅ Your file is ready in the folder:"
     STR_FINAL_FILENAME="Filename:"
-    STR_FINAL_LAUNCHING="🚀 Launching the game for a test run..."
+    STR_FINAL_LAUNCHING="🚀 Ejecutando el juego para probar..."
 fi
 
 # --- OTHER CONFIGURATION VARIABLES ---
@@ -145,6 +145,57 @@ log_verbose() {
     fi
 }
 
+# --- FUNCIÓN PARA COPIAR DOSBOX Y SUS DEPENDENCIAS (ESTRATEGIA MINIMALISTA) ---
+copy_dosbox_with_libs() {
+    local dosbox_path
+    local appdir_bin_path="${APP_DIR}/usr/bin"
+    local appdir_lib_path="${APP_DIR}/usr/lib"
+    local appdir_locale_path="${APP_DIR}/usr/share/locale"
+    local system_locale_path="/usr/share/locale"
+
+    dosbox_path="$(which dosbox)"
+
+    # 1. Copia el binario principal de dosbox y sus librerías
+    log_verbose "-> Copiando el binario de dosbox..."
+    cp "$dosbox_path" "$appdir_bin_path/"
+    
+    # Asegura que el binario de dosbox sea ejecutable
+    chmod +x "${appdir_bin_path}/$(basename "$dosbox_path")"
+
+    # 2. Copiando las librerías necesarias una por una.
+    log_verbose "-> Copiando librerías manualmente, una por una..."
+    mkdir -p "$appdir_lib_path"
+
+    # Librerías SDL
+    if [ -f "/lib/x86_64-linux-gnu/libSDL_sound-1.0.so.1" ]; then
+        cp "/lib/x86_64-linux-gnu/libSDL_sound-1.0.so.1" "$appdir_lib_path/"
+    fi
+    if [ -f "/lib/x86_64-linux-gnu/libSDL-1.2.so.0" ]; then
+        cp "/lib/x86_64-linux-gnu/libSDL-1.2.so.0" "$appdir_lib_path/"
+    fi
+    if [ -f "/lib/x86_64-linux-gnu/libSDL_net-1.2.so.0" ]; then
+        cp "/lib/x86_64-linux-gnu/libSDL_net-1.2.so.0" "$appdir_lib_path/"
+    fi
+    if [ -f "/lib/x86_64-linux-gnu/libSDL2-2.0.so.0" ]; then
+        cp "/lib/x86_64-linux-gnu/libSDL2-2.0.so.0" "$appdir_lib_path/"
+    fi
+
+    # Librerías de audio
+    if [ -f "/lib/x86_64-linux-gnu/libmikmod.so.3" ]; then
+        cp "/lib/x86_64-linux-gnu/libmikmod.so.3" "$appdir_lib_path/"
+    fi
+    if [ -f "/lib/x86_64-linux-gnu/libFLAC.so.12" ]; then
+        cp "/lib/x86_64-linux-gnu/libFLAC.so.12" "$appdir_lib_path/"
+    fi
+
+    # 3. Copia las localizaciones (traducciones) si existen
+    if [ -d "$system_locale_path" ]; then
+        log_verbose "-> Copiando archivos de localización de dosbox..."
+        mkdir -p "$appdir_locale_path"
+        rsync -a --include='dosbox' --include='*/' --exclude='*' "$system_locale_path/" "$appdir_locale_path/"
+    fi
+}
+
 # --- 2. INPUT VALIDATION ---
 if [ -z "$2" ]; then
     echo -e "${RED}${STR_ERR_NO_PARAMS}${NC}"
@@ -167,7 +218,15 @@ elif [ -f "$GAME_SOURCE_ZIP_PATH" ]; then
     log_verbose "${STR_INFO_FOUND_ZIP}"
     TEMP_UNZIP_DIR=$(mktemp -d)
     unzip -q "$GAME_SOURCE_ZIP_PATH" -d "$TEMP_UNZIP_DIR"
-    EFFECTIVE_SOURCE_PATH="$TEMP_UNZIP_DIR"
+    
+    # NUEVA LÓGICA: Comprueba si la carpeta descomprimida contiene solo una subcarpeta.
+    # Si es así, ajusta la ruta para apuntar a la carpeta del juego.
+    if [ "$(ls -1 "$TEMP_UNZIP_DIR" | wc -l)" -eq 1 ] && [ -d "$TEMP_UNZIP_DIR/$(ls -1 "$TEMP_UNZIP_DIR")" ]; then
+        log_verbose "-> La carpeta descomprimida contiene un único subdirectorio. Ajustando la ruta..."
+        EFFECTIVE_SOURCE_PATH="$TEMP_UNZIP_DIR/$(ls -1 "$TEMP_UNZIP_DIR")"
+    else
+        EFFECTIVE_SOURCE_PATH="$TEMP_UNZIP_DIR"
+    fi
     CLEANUP_TEMP_DIR=true
 else
     echo -e "${RED}${STR_ERR_NO_SOURCE}${NC}"
@@ -191,59 +250,70 @@ mkdir -p "$ASSETS_DIR"
 
 if [ ! -f "$APPIMAGE_TOOL_PATH" ]; then
     log_verbose "${STR_INFO_DOWNLOAD_APPIMAGETOOL}"
-    wget -O "$APPIMAGE_TOOL_PATH" "https://github.com/AppImage/AppImageKit/releases/latest/download/$APPIMAGE_TOOL_NAME"
+    wget -q -O "$APPIMAGE_TOOL_PATH" "https://github.com/AppImage/AppImageKit/releases/latest/download/$APPIMAGE_TOOL_NAME"
 fi
 chmod +x "$APPIMAGE_TOOL_PATH"
 
 if [ ! -f "$LICENSE_FILE_PATH" ]; then
     log_verbose "${STR_INFO_DOWNLOAD_LICENSE}"
-    wget -O "$LICENSE_FILE_PATH" https://www.gnu.org/licenses/gpl-3.0.txt
+    wget -q -O "$LICENSE_FILE_PATH" https://www.gnu.org/licenses/gpl-3.0.txt
 fi
 
 if [ ! -f "$APPIMAGE_TOOL_PATH" ] || [ ! -f "$LICENSE_FILE_PATH" ]; then
     echo -e "${RED}${STR_ERR_DOWNLOAD_FAILED}${NC}"
     exit 1
 fi
+
 log_verbose "${STR_INFO_CLEANING}"
 rm -rf "$APP_DIR"
-# Se elimina la limpieza del directorio de salida para no borrar toda la carpeta 'games'
-# rm -rf "$FINAL_OUTPUT_DIR"
 mkdir -p "${APP_DIR}/usr/bin"
+mkdir -p "${APP_DIR}/${INTERNAL_GAME_DIR}"
 
 # --- 5. COPY AND GENERATE FILES ---
 echo -e "${YELLOW}${STR_H3_GENERATE}${NC}"
 log_verbose "${STR_INFO_COPYING_FILES}"
-mkdir -p "${APP_DIR}/${INTERNAL_GAME_DIR}"
 cp -r "$EFFECTIVE_SOURCE_PATH"/* "${APP_DIR}/${INTERNAL_GAME_DIR}/"
-cp "$(which dosbox)" "${APP_DIR}/usr/bin/"
+
+# Llama a la función para copiar dosbox y sus librerías
+copy_dosbox_with_libs
+
+# Asegura que todos los archivos del juego tienen permisos de lectura y escritura.
+log_verbose "-> Asegurando que los archivos del juego tienen permisos correctos..."
+chmod -R u+rw,g+r,o+r "${APP_DIR}/${INTERNAL_GAME_DIR}"
 
 log_verbose "${STR_INFO_CREATING_CONFIG}"
 cat << EOF > "${APP_DIR}/${CONFIG_NAME}"
 [sdl]
 fullscreen=true
 [autoexec]
+@echo off
+mount c .
+c:
+${GAME_EXEC}
 EOF
 
 log_verbose "${STR_INFO_CREATING_APP_RUN}"
-cat << 'EOF' > "${APP_DIR}/AppRun"
-#!/bin/bash
-APP_NAME="NOMBRE_APP_AQUI"
-GAME_EXEC="EJECUTABLE_JUEGO_AQUI"
-INTERNAL_GAME_DIR="NOMBRE_CARPETA_INTERNA_AQUI"
-PERSISTENT_DIR="${HOME}/.local/share/${APP_NAME}"
-mkdir -p "$PERSISTENT_DIR"
-APPIMAGE_DIR="$(dirname "$0")"
-echo "MENSAJE_APP_RUN_SYNC"
-rsync -a --update "${APPIMAGE_DIR}/${INTERNAL_GAME_DIR}/" "$PERSISTENT_DIR/"
-cd "$PERSISTENT_DIR"
-echo "MENSAJE_APP_RUN_START"
-"${APPIMAGE_DIR}/usr/bin/dosbox" -conf "${APPIMAGE_DIR}/dosbox.conf" -c "mount c ." -c "C:" -c "${GAME_EXEC}" -c "exit"
-EOF
-sed -i "s/NOMBRE_APP_AQUI/$APP_NAME/g" "${APP_DIR}/AppRun"
-sed -i "s/EJECUTABLE_JUEGO_AQUI/$GAME_EXEC/g" "${APP_DIR}/AppRun"
-sed -i "s/NOMBRE_CARPETA_INTERNA_AQUI/$INTERNAL_GAME_DIR/g" "${APP_DIR}/AppRun"
-sed -i "s/MENSAJE_APP_RUN_SYNC/$STR_APP_RUN_SYNC/g" "${APP_DIR}/AppRun"
-sed -i "s/MENSAJE_APP_RUN_START/$STR_APP_RUN_START/g" "${APP_DIR}/AppRun"
+# Recreamos el AppRun de forma limpia
+printf '#!/bin/bash\n' > "${APP_DIR}/AppRun"
+printf 'set -e\n' >> "${APP_DIR}/AppRun"
+printf '\n' >> "${APP_DIR}/AppRun"
+printf 'APP_NAME="%s"\n' "$APP_NAME" >> "${APP_DIR}/AppRun"
+printf 'GAME_EXEC="%s"\n' "$GAME_EXEC" >> "${APP_DIR}/AppRun"
+printf 'INTERNAL_GAME_DIR="%s"\n' "$INTERNAL_GAME_DIR" >> "${APP_DIR}/AppRun"
+printf 'PERSISTENT_DIR="${HOME}/.local/share/${APP_NAME}"\n' >> "${APP_DIR}/AppRun"
+printf 'APPIMAGE_DIR="$(dirname "$0")"\n' >> "${APP_DIR}/AppRun"
+printf '\n' >> "${APP_DIR}/AppRun"
+printf 'mkdir -p "$PERSISTENT_DIR"\n' >> "${APP_DIR}/AppRun"
+printf 'echo "%s"\n' "$STR_APP_RUN_SYNC" >> "${APP_DIR}/AppRun"
+printf 'rsync -a --update "${APPIMAGE_DIR}/${INTERNAL_GAME_DIR}/" "$PERSISTENT_DIR/"\n' >> "${APP_DIR}/AppRun"
+printf 'cd "$PERSISTENT_DIR"\n' >> "${APP_DIR}/AppRun"
+printf 'echo "%s"\n' "$STR_APP_RUN_START" >> "${APP_DIR}/AppRun"
+printf '\n' >> "${APP_DIR}/AppRun"
+printf 'export LD_LIBRARY_PATH="${APPIMAGE_DIR}/usr/lib"\n' >> "${APP_DIR}/AppRun"
+printf 'export DOSBOX_CONFIG="${APPIMAGE_DIR}/dosbox.conf"\n' >> "${APP_DIR}/AppRun"
+printf '\n' >> "${APP_DIR}/AppRun"
+printf 'exec "${APPIMAGE_DIR}/usr/bin/dosbox" -conf "${APPIMAGE_DIR}/dosbox.conf" -c "mount c . -t dir" -c "c:" -c "${GAME_EXEC}"\n' >> "${APP_DIR}/AppRun"
+
 chmod +x "${APP_DIR}/AppRun"
 
 log_verbose "${STR_INFO_CREATING_DESKTOP}"
@@ -269,20 +339,20 @@ mkdir -p "${APP_DIR}/usr/share/metainfo"
 cat << EOF > "${APP_DIR}/usr/share/metainfo/${APP_NAME}.metainfo.xml"
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop-application">
-  <id>${APP_NAME}.desktop</id>
-  <metadata_license>CC0-1.0</metadata_license>
-  <project_license>GPL-3.0-or-later</project_license>
-  <name>${APP_NAME}</name>
-  <summary>${STR_APPSTREAM_SUMMARY}</summary>
-  <developer_name>felisuco</developer_name>
-  <description>
-    ${STR_APPSTREAM_DESC}
-  </description>
-  <launchable type="desktop-id">${APP_NAME}.desktop</launchable>
-  <releases>
-    <release version="1.0" date="$(date +%Y-%m-%d)" />
-  </releases>
-  <content_rating type="oars-1.1" />
+    <id>${APP_NAME}.desktop</id>
+    <metadata_license>CC0-1.0</metadata_license>
+    <project_license>GPL-3.0-or-later</project_license>
+    <name>${APP_NAME}</name>
+    <summary>${STR_APPSTREAM_SUMMARY}</summary>
+    <developer_name>felisuco</developer_name>
+    <description>
+        ${STR_APPSTREAM_DESC}
+    </description>
+    <launchable type="desktop-id">${APP_NAME}.desktop</launchable>
+    <releases>
+        <release version="1.0" date="$(date +%Y-%m-%d)" />
+    </releases>
+    <content_rating type="oars-1.1" />
 </component>
 EOF
 
