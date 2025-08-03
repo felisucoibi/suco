@@ -1,20 +1,15 @@
 # .suco — Juegos MS-DOS y CONSOLAS en formato one-click para Linux  
 ### .suco — One-click MS-DOS AND CONSOLE games for Linux
-
+MS-DOS, MEGADRIVE/GENESIS, NINTENDO NES, NITNENDO SNES BY NOW
 ---
 
 ## 🚀 ¿Cómo usarlo? / How to use it?
 
-### 📥 Descarga rápida / Quick Start
+1. 📦 **Bájate el .zip desde aquí  / Download the `.zip`**
 
-1. 📦 **Bájate el .zip desde aquí**  
-   Download the `.zip` from here (GitHub Releases o sitio web del proyecto)
+2. 📂 **Descomprímelo en una carpeta de tu elección  /    Extract it anywhere**
 
-2. 📂 **Descomprímelo** en una carpeta de tu elección  
-   Extract it anywhere
-
-3. ✅ **Dale permisos de ejecución al script**  
-   Give execute permissions to the script:
+3. ✅ **Dale permisos de ejecución al script / Give execute permissions to the script:**
 
    ```bash
    chmod +x sucomsdos.sh
@@ -25,15 +20,11 @@
 
 ### 🔧 Requisitos / Requirements
 
-- Linux con `bash`, `wget`, `rsync`, `unzip` y `dosbox` instalados  
-  Linux with `bash`, `wget`, `rsync`, `unzip`, and `dosbox` installed
-
+- Linux `bash`, `wget`, `rsync`, `unzip`  `dosbox`
+  
 ---
 
-### 📦 Instalación de dependencias
-
-A continuación, los comandos para instalar las dependencias en las principales distribuciones:  
-Below are commands to install dependencies on popular distributions:
+### 📦 Instalación de dependencias / Dependencies Install
 
 #### ✅ Ubuntu / Debian / Linux Mint
 ```bash
