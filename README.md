@@ -1,5 +1,5 @@
-# .suco — Juegos MS-DOS en formato one-click para Linux  
-### .suco — One-click MS-DOS games for Linux
+# .suco — Juegos MS-DOS y CONSOLAS en formato one-click para Linux  
+### .suco — One-click MS-DOS AND CONSOLE games for Linux
 
 ---
 
@@ -17,7 +17,8 @@
    Give execute permissions to the script:
 
    ```bash
-   chmod +x suco.sh
+   chmod +x sucomsdos.sh
+   chmod +x sucoarch.sh
    ```
 
 ---
@@ -54,54 +55,48 @@ sudo dnf install dosbox wget unzip rsync
 sudo zypper install dosbox wget unzip rsync
 ```
 
-#### ✅ Solus
-```bash
-sudo eopkg install dosbox wget unzip rsync
-```
-
-#### ✅ Void Linux
-```bash
-sudo xbps-install -S dosbox wget unzip rsync
-```
 
 ---
 
-- El script `suco.sh` debe estar en el directorio actual  
-  The `suco.sh` script must be in the current directory
+- Los script `sucomsdos.sh y sucoarch.sh` deben estar en el directorio actual  
+  The `sucomsdos.sh and sucoarch.sh` scripts must be in the current directory
 
-- El juego debe estar en la carpeta `source/` como:
+- El juego debe estar en la carpeta `/msdos o en /roms` como:
   - Carpeta con el nombre del juego, o  
-  - Archivo `.zip` con el nombre del juego  
-  The game must be placed in the `source/` directory as:
+  - Archivo `.zip` con el nombre del juego (solo para juegos msdos)  
+  The game must be placed in the `/msdos or /roms` directory as:
   - A folder named after the game, or  
-  - A `.zip` file named after the game
+  - A `.zip` file named after the game (only for msdos games)
 
 ---
 
 ### 🛠️ Instrucciones rápidas / Quick Instructions
 
 ```bash
-./suco.sh "Nombre del Juego" EJECUTABLE.EXE
-./suco.sh "Game Name" EXECUTABLE.EXE
+./sucomsdos.sh "Nombre del Juego" EJECUTABLE.EXE
+./sucomsdos.sh "Game Name" EXECUTABLE.EXE
+./sucoarch.sh "Nombre de la rom"
+./sucoarch.sh "Rom Name" 
 ```
 
 Ejemplo / Example:
 
 ```bash
-./suco.sh "Doom 1" DOOM.EXE
+./sucomsdos.sh "Doom 1" DOOM.EXE
+./sucoarch.sh "nemo.nes"
 ```
 
-📦 El script hace lo siguiente / The script does the following:
+📦 El script sucomsdos.sh hace lo siguiente / The script does the following:
 1. Verifica dependencias / Checks dependencies  
-2. Usa `source/NOMBRE/` o `source/NOMBRE.zip` como origen  
-   Uses `source/NAME/` or `source/NAME.zip` as source  
+2. Usa `msdos/NOMBRE/` o `msdos/NOMBRE.zip` como origen  
+   Uses `msdos/NAME/` or `msdos/NAME.zip` as source  
 3. Crea la estructura AppImage con los archivos del juego  
    Builds the AppImage structure with the game files  
 4. Genera un archivo `.suco` (AppImage) listo para ejecutar  
    Produces a ready-to-run `.suco` (AppImage) file
 
 🗃️ El archivo final estará en / The final file will be in:  
-`games/Nombre_del_Juego/Nombre_del_Juego-x86_64.suco`
+`games/Nombre_del_Juego-x86_64.suco`
 
 Este `.suco`:  
 This `.suco`:
@@ -119,8 +114,8 @@ This `.suco`:
   Fullscreen mode by default
 - Soporta guardado de archivos fuera del AppImage si el juego lo necesita  
   Supports saving files outside the AppImage if the game requires it
-- Soporta entrada desde carpeta o `.zip` en `source/`  
-  Accepts input from folder or `.zip` file in `source/`
+- Soporta entrada desde carpeta o `.zip` en `msdos/`  
+  Accepts input from folder or `.zip` file in `msdos/`
 - Todo incluido: DOSBox, juego, configuración y extras  
   All-in-one: DOSBox, game, config, and extras
 - Un único archivo `.suco` por juego  
@@ -187,6 +182,8 @@ Yesterday I just double-clicked and played without setup
       ✅ Make the project open source
 - ✅ Establecer un sistema de nombres y extensión `.suco` oficial  
       ✅ Define naming system and official `.suco` extension
+- ✅ Añadir consolas con retroarch
+      ✅ Add console roms with retroarch
 - [ ] Crear versión para Windows y otros sistemas operativos  
       Create version for Windows and other operating systems
 
@@ -200,8 +197,8 @@ Convert my childhood MS-DOS collection into `.suco` format
 Explorar otros sistemas / Explore other platforms:
 
 - Microordenadores clásicos / Classic microcomputers  
-- Consolas retro / Retro consoles  
-- Juegos que requieran emulador / Emulator-based games
+-  ✅ Consolas retro / Retro consoles  
+-  ✅ Juegos que requieran emulador / Emulator-based games
 
 ---
 
