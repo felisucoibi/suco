@@ -27,11 +27,20 @@ APPIMAGE_TOOL_NAME="appimagetool-x86_64.AppImage"
 LICENSE_FILE_NAME="gpl-3.0.txt"
 MAIN_GAMES_DIR="games"
 INTERNAL_GAME_DIR="game"
-VERBOSE=false
+VERBOSE=true
+
+# --- NUEVAS CONFIGURACIONES PARA DESCARGAR LIBRERÍAS DE DEBIAN ---
+SDL_DEB_PACKAGE="libsdl1.2debian_1.2.15+dfsg2-8_amd64.deb"
+SDL_SOUND_DEB_PACKAGE="libsdl-sound1.2_1.0.3-9+b2_amd64.deb"
+SDL_NET_DEB_PACKAGE="libsdl-net1.2_1.2.8-6+b2_amd64.deb"
+MIKMOD_DEB_PACKAGE="libmikmod3_3.3.11.1-7_amd64.deb"
+# Corregido: Usamos la versión de libflac12 que tu mirror tiene disponible.
+FLAC_DEB_PACKAGE="libflac12_1.4.2+ds-2_amd64.deb"
+DEB_LIBS_DIR="${ASSETS_DIR}/debian-libs"
+PRECOMPILED_LIBS_DIR="${ASSETS_DIR}/precompiled-libs"
 
 # --- 1. INTERNATIONALIZATION (i18n) ---
 if [[ $LANG == es* ]]; then
-    # --- Spanish Strings ---
     STR_H1_VALIDATION="### Verificando requisitos..."
     STR_ERR_NO_PARAMS="Error: Faltan parámetros."
     STR_USAGE="Uso: $0 \"Nombre Del Juego\" ComandoDeEjecucion"
@@ -44,8 +53,10 @@ if [[ $LANG == es* ]]; then
     STR_ERR_NO_WGET="Error: 'wget' no está instalado. Por favor, instálalo con 'sudo apt install wget'."
     STR_ERR_NO_RSYNC="Error: 'rsync' no está instalado. Por favor, instálalo con 'sudo apt install rsync'."
     STR_ERR_NO_UNZIP="Error: 'unzip' no está instalado. Por favor, instálalo con 'sudo apt install unzip'."
+    STR_ERR_NO_AR="Error: 'ar' no está instalado. Por favor, instálalo con 'sudo apt install binutils'."
     STR_OK_REQS_VERIFIED="✅ Requisitos verificados."
     STR_H2_PREPARE="### Preparando el entorno de compilación..."
+    STR_INFO_DOWNLOAD_LIBS="-> Descargando y preparando librerías de Debian..."
     STR_INFO_DOWNLOAD_APPIMAGETOOL="-> Descargando AppImageTool en la carpeta '$ASSETS_DIR'..."
     STR_INFO_DOWNLOAD_LICENSE="-> Descargando texto de la licencia GPLv3 en la carpeta '$ASSETS_DIR'..."
     STR_ERR_DOWNLOAD_FAILED="Error: No se pudieron descargar los recursos necesarios. Comprueba tu conexión a internet y vuelve a intentarlo."
@@ -74,7 +85,6 @@ if [[ $LANG == es* ]]; then
     STR_FINAL_FILENAME="Nombre del archivo:"
     STR_FINAL_LAUNCHING="🚀 Ejecutando el juego para probar..."
 else
-    # --- English Strings (Default) ---
     STR_H1_VALIDATION="### Checking requirements..."
     STR_ERR_NO_PARAMS="Error: Missing parameters."
     STR_USAGE="Usage: $0 \"Game Name\" GameCommand"
@@ -87,8 +97,10 @@ else
     STR_ERR_NO_WGET="Error: 'wget' is not installed. Please install it with 'sudo apt install wget'."
     STR_ERR_NO_RSYNC="Error: 'rsync' is not installed. Please install it with 'sudo apt install rsync'."
     STR_ERR_NO_UNZIP="Error: 'unzip' is not installed. Please install it with 'sudo apt install unzip'."
+    STR_ERR_NO_AR="Error: 'ar' is not installed. Please install it with 'sudo apt install binutils'."
     STR_OK_REQS_VERIFIED="✅ Requirements checked."
     STR_H2_PREPARE="### Preparing build environment..."
+    STR_INFO_DOWNLOAD_LIBS="-> Downloading and preparing Debian libraries..."
     STR_INFO_DOWNLOAD_APPIMAGETOOL="-> Downloading AppImageTool into '$ASSETS_DIR' folder..."
     STR_INFO_DOWNLOAD_LICENSE="-> Downloading GPLv3 license text into '$ASSETS_DIR' folder..."
     STR_ERR_DOWNLOAD_FAILED="Error: Could not download the required assets. Check your internet connection and try again."
@@ -96,9 +108,9 @@ else
     STR_H3_GENERATE="### Copiando y generando archivos..."
     STR_INFO_FOUND_ZIP="-> .zip file found. Unzipping to a temporary folder..."
     STR_INFO_COPYING_FILES="-> Copiando archivos del juego y DOSBox..."
-    STR_INFO_CREATING_CONFIG="-> Creating DOSBox configuration file..."
-    STR_INFO_CREATING_APP_RUN="-> Creating smart AppRun with persistence logic..."
-    STR_INFO_CREATING_DESKTOP="-> Creating .desktop file..."
+    STR_INFO_CREATING_CONFIG="-> Creando archivo de configuración de DOSBox..."
+    STR_INFO_CREATING_APP_RUN="-> Creando AppRun inteligente con lógica de persistencia..."
+    STR_INFO_CREATING_DESKTOP="-> Creando archivo .desktop..."
     STR_INFO_ICON_FOUND="-> Icon '$ICON_NAME' found in '$ASSETS_DIR'. Copiando..."
     STR_WARN_NO_ICON="-> Warning: Icon '$ICON_NAME' not found in '$ASSETS_DIR' folder. It will be created without an icon."
     STR_INFO_CREATING_METADATA="-> Creating license metadata (AppStream)..."
@@ -115,7 +127,7 @@ else
     STR_FINAL_SUCCESS="### PROCESS COMPLETE! ###"
     STR_FINAL_READY="✅ Your file is ready in the folder:"
     STR_FINAL_FILENAME="Filename:"
-    STR_FINAL_LAUNCHING="🚀 Launching the game for a test run..."
+    STR_FINAL_LAUNCHING="🚀 Ejecutando el juego para probar..."
 fi
 
 # --- OTHER CONFIGURATION VARIABLES ---
@@ -145,50 +157,101 @@ log_verbose() {
     fi
 }
 
-# --- FUNCIÓN PARA COPIAR DOSBOX Y SUS DEPENDENCIAS (ESTRATEGIA MINIMALISTA) ---
+# --- FUNCIÓN PARA DESCARGAR Y EXTRAER LAS LIBRERÍAS DE DEBIAN ---
+download_and_extract_libs() {
+    log_verbose "${STR_INFO_DOWNLOAD_LIBS}"
+    mkdir -p "$DEB_LIBS_DIR"
+    mkdir -p "$PRECOMPILED_LIBS_DIR"
+    local temp_dir=$(mktemp -d)
+
+    SDL_REPO_URL="http://deb.debian.org/debian/pool/main/libs/libsdl1.2"
+    if [ ! -f "${DEB_LIBS_DIR}/${SDL_DEB_PACKAGE}" ] || [ ! -s "${DEB_LIBS_DIR}/${SDL_DEB_PACKAGE}" ]; then
+        log_verbose "   -> Descargando ${SDL_DEB_PACKAGE}..."
+        wget -O "${DEB_LIBS_DIR}/${SDL_DEB_PACKAGE}" "${SDL_REPO_URL}/${SDL_DEB_PACKAGE}"
+    fi
+
+    SDL_SOUND_REPO_URL="http://deb.debian.org/debian/pool/main/s/sdl-sound1.2"
+    if [ ! -f "${DEB_LIBS_DIR}/${SDL_SOUND_DEB_PACKAGE}" ] || [ ! -s "${DEB_LIBS_DIR}/${SDL_SOUND_DEB_PACKAGE}" ]; then
+        log_verbose "   -> Descargando ${SDL_SOUND_DEB_PACKAGE}..."
+        wget -O "${DEB_LIBS_DIR}/${SDL_SOUND_DEB_PACKAGE}" "${SDL_SOUND_REPO_URL}/${SDL_SOUND_DEB_PACKAGE}"
+    fi
+    
+    SDL_NET_REPO_URL="http://deb.debian.org/debian/pool/main/s/sdl-net1.2"
+    if [ ! -f "${DEB_LIBS_DIR}/${SDL_NET_DEB_PACKAGE}" ] || [ ! -s "${DEB_LIBS_DIR}/${SDL_NET_DEB_PACKAGE}" ]; then
+        log_verbose "   -> Descargando ${SDL_NET_DEB_PACKAGE}..."
+        wget -O "${DEB_LIBS_DIR}/${SDL_NET_DEB_PACKAGE}" "${SDL_NET_REPO_URL}/${SDL_NET_DEB_PACKAGE}"
+    fi
+
+    MIKMOD_REPO_URL="http://deb.debian.org/debian/pool/main/libm/libmikmod"
+    if [ ! -f "${DEB_LIBS_DIR}/${MIKMOD_DEB_PACKAGE}" ] || [ ! -s "${DEB_LIBS_DIR}/${MIKMOD_DEB_PACKAGE}" ]; then
+        log_verbose "   -> Descargando ${MIKMOD_DEB_PACKAGE}..."
+        wget -O "${DEB_LIBS_DIR}/${MIKMOD_DEB_PACKAGE}" "${MIKMOD_REPO_URL}/${MIKMOD_DEB_PACKAGE}"
+    fi
+    
+    # URL y nombre de paquete corregidos según tu listado
+    FLAC_REPO_URL="http://deb.debian.org/debian/pool/main/f/flac"
+    if [ ! -f "${DEB_LIBS_DIR}/${FLAC_DEB_PACKAGE}" ] || [ ! -s "${DEB_LIBS_DIR}/${FLAC_DEB_PACKAGE}" ]; then
+        log_verbose "   -> Descargando ${FLAC_DEB_PACKAGE}..."
+        wget -O "${DEB_LIBS_DIR}/${FLAC_DEB_PACKAGE}" "${FLAC_REPO_URL}/${FLAC_DEB_PACKAGE}"
+    fi
+    
+    if [ ! -s "${DEB_LIBS_DIR}/${SDL_DEB_PACKAGE}" ] || [ ! -s "${DEB_LIBS_DIR}/${SDL_SOUND_DEB_PACKAGE}" ] || [ ! -s "${DEB_LIBS_DIR}/${SDL_NET_DEB_PACKAGE}" ] || [ ! -s "${DEB_LIBS_DIR}/${MIKMOD_DEB_PACKAGE}" ] || [ ! -s "${DEB_LIBS_DIR}/${FLAC_DEB_PACKAGE}" ]; then
+        echo -e "${RED}Error: No se pudieron descargar los paquetes .deb o están vacíos. Comprueba tu conexión a internet y las URLs.${NC}"
+        exit 1
+    fi
+
+    log_verbose "   -> Extrayendo bibliotecas..."
+    
+    extract_and_verify() {
+        local deb_file="$1"
+        local lib_name_pattern="$2"
+        local temp_dir_path="$3"
+        local precompiled_dir="$4"
+        
+        ar x "${deb_file}" data.tar.xz --output="$temp_dir_path"
+        tar --wildcards -xf "$temp_dir_path/data.tar.xz" --strip-components=4 -C "$precompiled_dir" "./usr/lib/x86_64-linux-gnu/${lib_name_pattern}"
+        
+        local files_extracted=$(find "$precompiled_dir" -maxdepth 1 -name "${lib_name_pattern}" | wc -l)
+        if [ "$files_extracted" -eq 0 ]; then
+             echo -e "${RED}Error de extracción: ${lib_name_pattern} binario no extraído correctamente.${NC}"
+             exit 1
+        fi
+    }
+
+    extract_and_verify "${DEB_LIBS_DIR}/${SDL_DEB_PACKAGE}" "libSDL-1.2.so.0*" "$temp_dir" "$PRECOMPILED_LIBS_DIR"
+    extract_and_verify "${DEB_LIBS_DIR}/${SDL_SOUND_DEB_PACKAGE}" "libSDL_sound-1.0.so.1*" "$temp_dir" "$PRECOMPILED_LIBS_DIR"
+    extract_and_verify "${DEB_LIBS_DIR}/${SDL_NET_DEB_PACKAGE}" "libSDL_net-1.2.so.0*" "$temp_dir" "$PRECOMPILED_LIBS_DIR"
+    extract_and_verify "${DEB_LIBS_DIR}/${MIKMOD_DEB_PACKAGE}" "libmikmod.so.3*" "$temp_dir" "$PRECOMPILED_LIBS_DIR"
+    extract_and_verify "${DEB_LIBS_DIR}/${FLAC_DEB_PACKAGE}" "libFLAC.so.12*" "$temp_dir" "$PRECOMPILED_LIBS_DIR"
+
+    log_verbose "   -> Las bibliotecas se extrajeron correctamente a '$PRECOMPILED_LIBS_DIR'."
+    
+    rm -rf "$temp_dir"
+}
+
+# --- FUNCIÓN PARA COPIAR DOSBOX Y SUS DEPENDENCIAS ---
 copy_dosbox_with_libs() {
     local dosbox_path
     local appdir_bin_path="${APP_DIR}/usr/bin"
     local appdir_lib_path="${APP_DIR}/usr/lib"
     local appdir_locale_path="${APP_DIR}/usr/share/locale"
     local system_locale_path="/usr/share/locale"
+    local precompiled_libs_path="${PRECOMPILED_LIBS_DIR}"
 
     dosbox_path="$(which dosbox)"
-
-    # 1. Copia el binario principal de dosbox y sus librerías
     log_verbose "-> Copiando el binario de dosbox..."
     cp "$dosbox_path" "$appdir_bin_path/"
-    
-    # Asegura que el binario de dosbox sea ejecutable
     chmod +x "${appdir_bin_path}/$(basename "$dosbox_path")"
 
-    # 2. Copiando las librerías necesarias una por una.
-    log_verbose "-> Copiando librerías manualmente, una por una..."
+    log_verbose "-> Copiando librerías manualmente desde la caché de Debian..."
     mkdir -p "$appdir_lib_path"
 
-    # Librerías SDL
-    if [ -f "/lib/x86_64-linux-gnu/libSDL_sound-1.0.so.1" ]; then
-        cp "/lib/x86_64-linux-gnu/libSDL_sound-1.0.so.1" "$appdir_lib_path/"
-    fi
-    if [ -f "/lib/x86_64-linux-gnu/libSDL-1.2.so.0" ]; then
-        cp "/lib/x86_64-linux-gnu/libSDL-1.2.so.0" "$appdir_lib_path/"
-    fi
-    if [ -f "/lib/x86_64-linux-gnu/libSDL_net-1.2.so.0" ]; then
-        cp "/lib/x86_64-linux-gnu/libSDL_net-1.2.so.0" "$appdir_lib_path/"
-    fi
-    if [ -f "/lib/x86_64-linux-gnu/libSDL2-2.0.so.0" ]; then
-        cp "/lib/x86_64-linux-gnu/libSDL2-2.0.so.0" "$appdir_lib_path/"
-    fi
+    cp -P "${precompiled_libs_path}/libSDL-1.2.so.0"* "$appdir_lib_path/"
+    cp -P "${precompiled_libs_path}/libSDL_sound-1.0.so.1"* "$appdir_lib_path/"
+    cp -P "${precompiled_libs_path}/libSDL_net-1.2.so.0"* "$appdir_lib_path/"
+    cp -P "${precompiled_libs_path}/libmikmod.so.3"* "$appdir_lib_path/"
+    cp -P "${precompiled_libs_path}/libFLAC.so.12"* "$appdir_lib_path/"
 
-    # Librerías de audio
-    if [ -f "/lib/x86_64-linux-gnu/libmikmod.so.3" ]; then
-        cp "/lib/x86_64-linux-gnu/libmikmod.so.3" "$appdir_lib_path/"
-    fi
-    if [ -f "/lib/x86_64-linux-gnu/libFLAC.so.12" ]; then
-        cp "/lib/x86_64-linux-gnu/libFLAC.so.12" "$appdir_lib_path/"
-    fi
-
-    # 3. Copia las localizaciones (traducciones) si existen
     if [ -d "$system_locale_path" ]; then
         log_verbose "-> Copiando archivos de localización de dosbox..."
         mkdir -p "$appdir_locale_path"
@@ -211,6 +274,7 @@ if ! command -v dosbox &> /dev/null; then echo -e "${RED}${STR_ERR_NO_DOSBOX}${N
 if ! command -v wget &> /dev/null; then echo -e "${RED}${STR_ERR_NO_WGET}${NC}"; exit 1; fi
 if ! command -v rsync &> /dev/null; then echo -e "${RED}${STR_ERR_NO_RSYNC}${NC}"; exit 1; fi
 if ! command -v unzip &> /dev/null; then echo -e "${RED}${STR_ERR_NO_UNZIP}${NC}"; exit 1; fi
+if ! command -v ar &> /dev/null; then echo -e "${RED}${STR_ERR_NO_AR}${NC}"; exit 1; fi
 
 if [ -d "$GAME_SOURCE_DIR_PATH" ]; then
     EFFECTIVE_SOURCE_PATH="$GAME_SOURCE_DIR_PATH"
@@ -219,8 +283,6 @@ elif [ -f "$GAME_SOURCE_ZIP_PATH" ]; then
     TEMP_UNZIP_DIR=$(mktemp -d)
     unzip -q "$GAME_SOURCE_ZIP_PATH" -d "$TEMP_UNZIP_DIR"
     
-    # NUEVA LÓGICA: Comprueba si la carpeta descomprimida contiene solo una subcarpeta.
-    # Si es así, ajusta la ruta para apuntar a la carpeta del juego.
     if [ "$(ls -1 "$TEMP_UNZIP_DIR" | wc -l)" -eq 1 ] && [ -d "$TEMP_UNZIP_DIR/$(ls -1 "$TEMP_UNZIP_DIR")" ]; then
         log_verbose "-> La carpeta descomprimida contiene un único subdirectorio. Ajustando la ruta..."
         EFFECTIVE_SOURCE_PATH="$TEMP_UNZIP_DIR/$(ls -1 "$TEMP_UNZIP_DIR")"
@@ -250,16 +312,18 @@ mkdir -p "$ASSETS_DIR"
 
 if [ ! -f "$APPIMAGE_TOOL_PATH" ]; then
     log_verbose "${STR_INFO_DOWNLOAD_APPIMAGETOOL}"
-    wget -q -O "$APPIMAGE_TOOL_PATH" "https://github.com/AppImage/AppImageKit/releases/latest/download/$APPIMAGE_TOOL_NAME"
+    wget -O "$APPIMAGE_TOOL_PATH" "https://github.com/AppImage/AppImageKit/releases/latest/download/$APPIMAGE_TOOL_NAME"
 fi
 chmod +x "$APPIMAGE_TOOL_PATH"
 
 if [ ! -f "$LICENSE_FILE_PATH" ]; then
     log_verbose "${STR_INFO_DOWNLOAD_LICENSE}"
-    wget -q -O "$LICENSE_FILE_PATH" https://www.gnu.org/licenses/gpl-3.0.txt
+    wget -O "$LICENSE_FILE_PATH" https://www.gnu.org/licenses/gpl-3.0.txt
 fi
 
-if [ ! -f "$APPIMAGE_TOOL_PATH" ] || [ ! -f "$LICENSE_FILE_PATH" ]; then
+download_and_extract_libs
+
+if [ ! -s "$APPIMAGE_TOOL_PATH" ] || [ ! -s "$LICENSE_FILE_PATH" ]; then
     echo -e "${RED}${STR_ERR_DOWNLOAD_FAILED}${NC}"
     exit 1
 fi
@@ -274,10 +338,8 @@ echo -e "${YELLOW}${STR_H3_GENERATE}${NC}"
 log_verbose "${STR_INFO_COPYING_FILES}"
 cp -r "$EFFECTIVE_SOURCE_PATH"/* "${APP_DIR}/${INTERNAL_GAME_DIR}/"
 
-# Llama a la función para copiar dosbox y sus librerías
 copy_dosbox_with_libs
 
-# Asegura que todos los archivos del juego tienen permisos de lectura y escritura.
 log_verbose "-> Asegurando que los archivos del juego tienen permisos correctos..."
 chmod -R u+rw,g+r,o+r "${APP_DIR}/${INTERNAL_GAME_DIR}"
 
@@ -285,6 +347,11 @@ log_verbose "${STR_INFO_CREATING_CONFIG}"
 cat << EOF > "${APP_DIR}/${CONFIG_NAME}"
 [sdl]
 fullscreen=true
+fullresolution=desktop
+aspect=true
+output=opengl
+[render]
+scaler=normal2x
 [autoexec]
 @echo off
 mount c .
@@ -293,7 +360,6 @@ ${GAME_EXEC}
 EOF
 
 log_verbose "${STR_INFO_CREATING_APP_RUN}"
-# Recreamos el AppRun de forma limpia
 printf '#!/bin/bash\n' > "${APP_DIR}/AppRun"
 printf 'set -e\n' >> "${APP_DIR}/AppRun"
 printf '\n' >> "${APP_DIR}/AppRun"
@@ -309,7 +375,8 @@ printf 'rsync -a --update "${APPIMAGE_DIR}/${INTERNAL_GAME_DIR}/" "$PERSISTENT_D
 printf 'cd "$PERSISTENT_DIR"\n' >> "${APP_DIR}/AppRun"
 printf 'echo "%s"\n' "$STR_APP_RUN_START" >> "${APP_DIR}/AppRun"
 printf '\n' >> "${APP_DIR}/AppRun"
-printf 'export LD_LIBRARY_PATH="${APPIMAGE_DIR}/usr/lib"\n' >> "${APP_DIR}/AppRun"
+printf '# CORRECCIÓN: Añadimos nuestra ruta al LD_LIBRARY_PATH existente\n' >> "${APP_DIR}/AppRun"
+printf 'export LD_LIBRARY_PATH="${APPIMAGE_DIR}/usr/lib:${LD_LIBRARY_PATH}"\n' >> "${APP_DIR}/AppRun"
 printf 'export DOSBOX_CONFIG="${APPIMAGE_DIR}/dosbox.conf"\n' >> "${APP_DIR}/AppRun"
 printf '\n' >> "${APP_DIR}/AppRun"
 printf 'exec "${APPIMAGE_DIR}/usr/bin/dosbox" -conf "${APPIMAGE_DIR}/dosbox.conf" -c "mount c . -t dir" -c "c:" -c "${GAME_EXEC}"\n' >> "${APP_DIR}/AppRun"
@@ -378,6 +445,9 @@ mv "$SOURCE_APPIMAGE_FILENAME" "${FINAL_OUTPUT_DIR}/${FINAL_FILENAME}"
 
 log_verbose "${STR_INFO_CLEANING_TEMP}"
 rm -rf "$APP_DIR"
+rm -rf "$PRECOMPILED_LIBS_DIR"
+# Se comenta la siguiente línea para mantener la caché de librerías .deb
+# rm -rf "$DEB_LIBS_DIR"
 
 if [ "$CLEANUP_TEMP_DIR" = true ]; then
     log_verbose "${STR_INFO_CLEANING_UNZIP}"
