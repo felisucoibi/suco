@@ -12,6 +12,7 @@ VERBOSE=false
 RETROARCH_APPIMAGE_NAME="RetroArch-Linux-x86_64.AppImage"
 RETROARCH_EXTRACTED_DIR="squashfs-root"
 CONFIG_NAME="retroarch.cfg"
+PERSISTENT_CONFIG_NAME="retroarch.cfg"
 
 # --- i18n español ---
 if [[ $LANG == es* ]]; then
@@ -41,7 +42,7 @@ if [[ $LANG == es* ]]; then
     STR_WARN_NO_ICON="-> Advertencia: No se encontró el icono."
     STR_INFO_COPYING_LICENSE="-> Copiando licencia..."
     STR_H4_PACKAGE="### Generando el archivo .suco final..."
-    STR_FINAL_SUCCESS="### ¡PROCESO COMPLETADO! ###"
+    STR_FINAL_SUCCESS="### ¡PROCESO COMPLETEDO! ###"
     STR_FINAL_READY="✅ Tu archivo está listo en la carpeta:"
     STR_FINAL_FILENAME="Nombre del archivo:"
     STR_FINAL_LAUNCHING="🚀 Ejecutando el juego para probar..."
@@ -130,11 +131,9 @@ cp "$CORE_SO_PATH" "$APP_DIR/usr/lib/libretro/"
 log_verbose "$STR_INFO_CREATING_CONFIG"
 cat << EOF > "$APP_DIR/$CONFIG_NAME"
 config_save_on_exit = "false"
-video_driver = "gl"
-video_fullscreen = "true"
+video_driver = "glcore" # <--- CAMBIO IMPORTANTE
+video_fullscreen = "false"
 video_windowed_fullscreen = "false"
-video_fullscreen_x = 1920
-video_fullscreen_y = 1080
 video_force_aspect = "true"
 aspect_ratio_index = "0"
 menu_driver = "rgui"
@@ -149,14 +148,10 @@ export LD_LIBRARY_PATH="\$APPDIR/usr/lib:\$LD_LIBRARY_PATH"
 export RETROARCH_ASSETS_DIR="\$APPDIR/usr/share/retroarch/assets"
 PERSISTENT_DIR="\${HOME}/.local/share/${APP_NAME}"
 mkdir -p "\$PERSISTENT_DIR"
-[ ! -f "\$PERSISTENT_DIR/${CONFIG_NAME}" ] && cp "\$APPDIR/${CONFIG_NAME}" "\$PERSISTENT_DIR/${CONFIG_NAME}"
-
+[ ! -f "\$PERSISTENT_DIR/${PERSISTENT_CONFIG_NAME}" ] && cp "\$APPDIR/${CONFIG_NAME}" "\$PERSISTENT_DIR/${PERSISTENT_CONFIG_NAME}"
 cd "\$APPDIR"
 exec ./usr/bin/retroarch \\
-    --config "\$PERSISTENT_DIR/${CONFIG_NAME}" \\
-    --appendconfig "\$APP_DIR/${CONFIG_NAME}" \\
-    --set-shader "" \\
-    --fullscreen \\
+    --config "\$PERSISTENT_DIR/${PERSISTENT_CONFIG_NAME}" \\
     -L "./usr/lib/libretro/${CORE_SO_NAME}" \\
     "./${INTERNAL_ROM_DIR}/${ROM_FILENAME}"
 EOF
@@ -180,12 +175,10 @@ cp "$LICENSE_FILE_PATH" "$APP_DIR/usr/share/licenses/${APP_NAME}/COPYING"
 
 # --- COMPILACIÓN ---
 echo -e "${YELLOW}${STR_H4_PACKAGE}${NC}"
-# El nombre del archivo se sanitiza para la AppImage para evitar el problema de FUSE
 SANITIZED_APP_NAME=$(echo "$APP_NAME" | tr -d '()' | tr ' ' '_')
 SOURCE_APPIMAGE_FILENAME="${SANITIZED_APP_NAME}.AppImage"
 [ "$VERBOSE" = true ] && ./"$APPIMAGE_TOOL_PATH" "$APP_DIR" "$SOURCE_APPIMAGE_FILENAME" || ./"$APPIMAGE_TOOL_PATH" -s "$APP_DIR" "$SOURCE_APPIMAGE_FILENAME" > /dev/null 2>&1
 
-# El nombre final es el deseado, sin el sufijo de arquitectura
 FINAL_FILENAME="${APP_NAME}.suco"
 mkdir -p "$MAIN_GAMES_DIR"
 mv "$SOURCE_APPIMAGE_FILENAME" "${MAIN_GAMES_DIR}/${FINAL_FILENAME}"
@@ -196,7 +189,6 @@ echo -e "${STR_FINAL_READY} ${GREEN}${MAIN_GAMES_DIR}/${NC}"
 echo -e "${STR_FINAL_FILENAME} ${GREEN}${FINAL_FILENAME}${NC}"
 echo -e "\n${YELLOW}${STR_FINAL_LAUNCHING}${NC}"
 
-# Se crea un nombre temporal para la prueba y se elimina después
 TEST_FILENAME_SAFE="temp_game_test.suco"
 cp "${MAIN_GAMES_DIR}/${FINAL_FILENAME}" "${MAIN_GAMES_DIR}/${TEST_FILENAME_SAFE}"
 "${MAIN_GAMES_DIR}/${TEST_FILENAME_SAFE}"
