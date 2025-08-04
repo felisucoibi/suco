@@ -22,7 +22,7 @@ if [[ $LANG == es* ]]; then
     STR_EXAMPLE="Ejemplo: $0 \"Little Nemo.nes\""
     STR_ERR_ROM_NOT_FOUND="Error: El archivo ROM no se encuentra en la carpeta de su sistema."
     STR_INFO_EXPECTED_PATH="Se esperaba encontrarlo en:"
-    STR_ERR_UNSUPPORTED_EXT="Error: La extensión de archivo no es compatible. Extensiones soportadas: .md, .gen, .sms, .nes, .sfc, .smc, .gb, .gbc, .gba, .n64, .z64, .v64, .bin, .cue, .iso, .chd"
+    STR_ERR_UNSUPPORTED_EXT="Error: La extensión de archivo no es compatible. Extensiones soportadas: .md, .gen, .sms, .nes, .sfc, .smc, .gb, .gbc, .gba, .n64, .z64, .v64, .bin, .cue, .iso, .chd, .tap, .tzx, .sna, .z80"
     STR_ERR_NO_LOCAL_RETROARCH="Error: No se encuentra '${RETROARCH_APPIMAGE_NAME}' en '$ASSETS_DIR'."
     STR_WARN_NO_ROMS_FOLDER="Advertencia: La carpeta de ROMs '$BASE_ROMS_DIR' no se encuentra."
     STR_INFO_CREATING_ROMS_FOLDER="-> Creando la carpeta '$BASE_ROMS_DIR'..."
@@ -73,6 +73,7 @@ case "$ROM_EXTENSION_LOWER" in
     gba) SYSTEM="gba"; CORE_ZIP_NAME="mgba_libretro.so.zip"; CORE_SO_NAME="mgba_libretro.so" ;;
     n64|z64|v64) SYSTEM="n64"; CORE_ZIP_NAME="mupen64plus_next_libretro.so.zip"; CORE_SO_NAME="mupen64plus_next_libretro.so" ;;
     bin|cue|iso|chd) SYSTEM="psx"; CORE_ZIP_NAME="pcsx_rearmed_libretro.so.zip"; CORE_SO_NAME="pcsx_rearmed_libretro.so" ;;
+    tap|tzx|sna|z80) SYSTEM="zx_spectrum"; CORE_ZIP_NAME="fuse_libretro.so.zip"; CORE_SO_NAME="fuse_libretro.so" ;;
     *) echo -e "${RED}${STR_ERR_UNSUPPORTED_EXT}${NC}"; exit 1 ;;
 esac
 
@@ -128,22 +129,57 @@ mkdir -p "$APP_DIR/$INTERNAL_ROM_DIR" "$APP_DIR/usr/lib/libretro"
 cp "$ROM_PATH" "$APP_DIR/$INTERNAL_ROM_DIR/"
 cp "$CORE_SO_PATH" "$APP_DIR/usr/lib/libretro/"
 
-log_verbose "$STR_INFO_CREATING_CONFIG"
-cat << EOF > "$APP_DIR/$CONFIG_NAME"
+# Creando el archivo de configuración principal o el especial para Spectrum
+if [ "$SYSTEM" == "zx_spectrum" ]; then
+    log_verbose "-> Creando un archivo de configuración especial para ZX Spectrum..."
+    PERSISTENT_CONFIG_NAME="retroarch-zx-spectrum.cfg"
+    cat << EOF > "$APP_DIR/$CONFIG_NAME"
+# --- Configuración base para el AppImage ---
 config_save_on_exit = "false"
-video_driver = "glcore" # <--- CAMBIO IMPORTANTE
+video_driver = "glcore"
+video_fullscreen = "false"
+video_windowed_fullscreen = "false"
+video_force_aspect = "true"
+aspect_ratio_index = "0"
+menu_driver = "rgui"
+# --- Desactivar hotkeys para el core de Fuse (ZX Spectrum) ---
+input_enable_hotkey = "nul"
+input_exit_emulator = "nul"
+input_menu_toggle = "nul"
+input_fast_forward_toggle = "nul"
+input_save_state = "nul"
+input_load_state = "nul"
+# Aquí está la corrección: anular explícitamente la tecla de pausa
+input_pause_toggle = "nul"
+# -------------------------------------------------------------
+EOF
+else
+    log_verbose "$STR_INFO_CREATING_CONFIG"
+    cat << EOF > "$APP_DIR/$CONFIG_NAME"
+config_save_on_exit = "false"
+video_driver = "glcore"
 video_fullscreen = "false"
 video_windowed_fullscreen = "false"
 video_force_aspect = "true"
 aspect_ratio_index = "0"
 menu_driver = "rgui"
 EOF
+fi
 
 log_verbose "$STR_INFO_CREATING_APP_RUN"
 cat << EOF > "$APP_DIR/AppRun"
 #!/bin/bash
 set -e
-APPDIR="\$(dirname "\$(readlink -f "\$0")")"
+
+# Verificación de la extensión .suco al ejecutar el binario
+EXEC_NAME=\$(basename "\$APPIMAGE")
+if [[ ! "\$EXEC_NAME" =~ \.suco$ ]]; then
+    echo "Error: Este archivo debe ser ejecutado con la extensión '.suco'."
+    echo "Su nombre actual es '\$EXEC_NAME'. Por favor, renómbrelo para que termine en '.suco'."
+    exit 1
+fi
+
+APPDIR="\$(dirname "\$0")"
 export LD_LIBRARY_PATH="\$APPDIR/usr/lib:\$LD_LIBRARY_PATH"
 export RETROARCH_ASSETS_DIR="\$APPDIR/usr/share/retroarch/assets"
 PERSISTENT_DIR="\${HOME}/.local/share/${APP_NAME}"
@@ -177,7 +213,14 @@ cp "$LICENSE_FILE_PATH" "$APP_DIR/usr/share/licenses/${APP_NAME}/COPYING"
 echo -e "${YELLOW}${STR_H4_PACKAGE}${NC}"
 SANITIZED_APP_NAME=$(echo "$APP_NAME" | tr -d '()' | tr ' ' '_')
 SOURCE_APPIMAGE_FILENAME="${SANITIZED_APP_NAME}.AppImage"
-[ "$VERBOSE" = true ] && ./"$APPIMAGE_TOOL_PATH" "$APP_DIR" "$SOURCE_APPIMAGE_FILENAME" || ./"$APPIMAGE_TOOL_PATH" -s "$APP_DIR" "$SOURCE_APPIMAGE_FILENAME" > /dev/null 2>&1
+
+if [ "$VERBOSE" = true ]; then
+    # Usamos la ruta completa del binario
+    "$APPIMAGE_TOOL_PATH" "$APP_DIR" "$SOURCE_APPIMAGE_FILENAME"
+else
+    # Usamos la ruta completa del binario
+    "$APPIMAGE_TOOL_PATH" -s "$APP_DIR" "$SOURCE_APPIMAGE_FILENAME" > /dev/null 2>&1
+fi
 
 FINAL_FILENAME="${APP_NAME}.suco"
 mkdir -p "$MAIN_GAMES_DIR"
