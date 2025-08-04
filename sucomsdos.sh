@@ -356,8 +356,10 @@ fullscreen=true
 fullresolution=desktop
 aspect=true
 output=opengl
+autolock=false
+priority=higher,normal
 [render]
-scaler=normal2x
+scaler=normal3x
 [autoexec]
 @echo off
 mount c .
