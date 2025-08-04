@@ -34,7 +34,6 @@ SDL_DEB_PACKAGE="libsdl1.2debian_1.2.15+dfsg2-8_amd64.deb"
 SDL_SOUND_DEB_PACKAGE="libsdl-sound1.2_1.0.3-9+b2_amd64.deb"
 SDL_NET_DEB_PACKAGE="libsdl-net1.2_1.2.8-6+b2_amd64.deb"
 MIKMOD_DEB_PACKAGE="libmikmod3_3.3.11.1-7_amd64.deb"
-# Corregido: Usamos la versión de libflac12 que tu mirror tiene disponible.
 FLAC_DEB_PACKAGE="libflac12_1.4.2+ds-2_amd64.deb"
 DEB_LIBS_DIR="${ASSETS_DIR}/debian-libs"
 PRECOMPILED_LIBS_DIR="${ASSETS_DIR}/precompiled-libs"
@@ -49,7 +48,7 @@ if [[ $LANG == es* ]]; then
     STR_INFO_EXPECTED_PATH="Se esperaba encontrar:"
     STR_ERR_EMPTY_FOLDER="Error: La carpeta de origen del juego está vacía."
     STR_INFO_EMPTY_FOLDER_HINT="Por favor, copia los archivos de tu juego dentro para poder continuar."
-    STR_ERR_NO_DOSBOX="Error: 'dosbox' no está instalado. Por favor, instálalo con 'sudo apt install dosbox'."
+    STR_ERR_NO_DOSBOX="Error: 'dosbox' o 'dosbox-staging' no está instalado. Por favor, instálalo con 'sudo apt install dosbox' o 'sudo apt install dosbox-staging'."
     STR_ERR_NO_WGET="Error: 'wget' no está instalado. Por favor, instálalo con 'sudo apt install wget'."
     STR_ERR_NO_RSYNC="Error: 'rsync' no está instalado. Por favor, instálalo con 'sudo apt install rsync'."
     STR_ERR_NO_UNZIP="Error: 'unzip' no está instalado. Por favor, instálalo con 'sudo apt install unzip'."
@@ -93,7 +92,7 @@ else
     STR_INFO_EXPECTED_PATH="Expected to find either:"
     STR_ERR_EMPTY_FOLDER="Error: The game's source folder is empty."
     STR_INFO_EMPTY_FOLDER_HINT="Please copy your game files inside to continue."
-    STR_ERR_NO_DOSBOX="Error: 'dosbox' is not installed. Please install it with 'sudo apt install dosbox'."
+    STR_ERR_NO_DOSBOX="Error: 'dosbox' or 'dosbox-staging' is not installed. Please install it with 'sudo apt install dosbox' or 'sudo apt install dosbox-staging'."
     STR_ERR_NO_WGET="Error: 'wget' is not installed. Please install it with 'sudo apt install wget'."
     STR_ERR_NO_RSYNC="Error: 'rsync' is not installed. Please install it with 'sudo apt install rsync'."
     STR_ERR_NO_UNZIP="Error: 'unzip' is not installed. Please install it with 'sudo apt install unzip'."
@@ -188,7 +187,6 @@ download_and_extract_libs() {
         wget -O "${DEB_LIBS_DIR}/${MIKMOD_DEB_PACKAGE}" "${MIKMOD_REPO_URL}/${MIKMOD_DEB_PACKAGE}"
     fi
     
-    # URL y nombre de paquete corregidos según tu listado
     FLAC_REPO_URL="http://deb.debian.org/debian/pool/main/f/flac"
     if [ ! -f "${DEB_LIBS_DIR}/${FLAC_DEB_PACKAGE}" ] || [ ! -s "${DEB_LIBS_DIR}/${FLAC_DEB_PACKAGE}" ]; then
         log_verbose "   -> Descargando ${FLAC_DEB_PACKAGE}..."
@@ -231,17 +229,15 @@ download_and_extract_libs() {
 
 # --- FUNCIÓN PARA COPIAR DOSBOX Y SUS DEPENDENCIAS ---
 copy_dosbox_with_libs() {
-    local dosbox_path
     local appdir_bin_path="${APP_DIR}/usr/bin"
     local appdir_lib_path="${APP_DIR}/usr/lib"
     local appdir_locale_path="${APP_DIR}/usr/share/locale"
     local system_locale_path="/usr/share/locale"
     local precompiled_libs_path="${PRECOMPILED_LIBS_DIR}"
 
-    dosbox_path="$(which dosbox)"
     log_verbose "-> Copiando el binario de dosbox..."
-    cp "$dosbox_path" "$appdir_bin_path/"
-    chmod +x "${appdir_bin_path}/$(basename "$dosbox_path")"
+    cp "$DOSBOX_COMMAND" "$appdir_bin_path/dosbox"
+    chmod +x "${appdir_bin_path}/dosbox"
 
     log_verbose "-> Copiando librerías manualmente desde la caché de Debian..."
     mkdir -p "$appdir_lib_path"
@@ -270,7 +266,17 @@ fi
 # --- 3. DEPENDENCY AND SOURCE CHECKS ---
 echo -e "${YELLOW}${STR_H1_VALIDATION}${NC}"
 
-if ! command -v dosbox &> /dev/null; then echo -e "${RED}${STR_ERR_NO_DOSBOX}${NC}"; exit 1; fi
+DOSBOX_COMMAND=""
+
+if command -v dosbox &> /dev/null; then
+    DOSBOX_COMMAND="$(command -v dosbox)"
+elif command -v dosbox-staging &> /dev/null; then
+    DOSBOX_COMMAND="$(command -v dosbox-staging)"
+else
+    echo -e "${RED}${STR_ERR_NO_DOSBOX}${NC}"
+    exit 1
+fi
+
 if ! command -v wget &> /dev/null; then echo -e "${RED}${STR_ERR_NO_WGET}${NC}"; exit 1; fi
 if ! command -v rsync &> /dev/null; then echo -e "${RED}${STR_ERR_NO_RSYNC}${NC}"; exit 1; fi
 if ! command -v unzip &> /dev/null; then echo -e "${RED}${STR_ERR_NO_UNZIP}${NC}"; exit 1; fi
@@ -360,26 +366,37 @@ ${GAME_EXEC}
 EOF
 
 log_verbose "${STR_INFO_CREATING_APP_RUN}"
-printf '#!/bin/bash\n' > "${APP_DIR}/AppRun"
-printf 'set -e\n' >> "${APP_DIR}/AppRun"
-printf '\n' >> "${APP_DIR}/AppRun"
-printf 'APP_NAME="%s"\n' "$APP_NAME" >> "${APP_DIR}/AppRun"
-printf 'GAME_EXEC="%s"\n' "$GAME_EXEC" >> "${APP_DIR}/AppRun"
-printf 'INTERNAL_GAME_DIR="%s"\n' "$INTERNAL_GAME_DIR" >> "${APP_DIR}/AppRun"
-printf 'PERSISTENT_DIR="${HOME}/.local/share/${APP_NAME}"\n' >> "${APP_DIR}/AppRun"
-printf 'APPIMAGE_DIR="$(dirname "$0")"\n' >> "${APP_DIR}/AppRun"
-printf '\n' >> "${APP_DIR}/AppRun"
-printf 'mkdir -p "$PERSISTENT_DIR"\n' >> "${APP_DIR}/AppRun"
-printf 'echo "%s"\n' "$STR_APP_RUN_SYNC" >> "${APP_DIR}/AppRun"
-printf 'rsync -a --update "${APPIMAGE_DIR}/${INTERNAL_GAME_DIR}/" "$PERSISTENT_DIR/"\n' >> "${APP_DIR}/AppRun"
-printf 'cd "$PERSISTENT_DIR"\n' >> "${APP_DIR}/AppRun"
-printf 'echo "%s"\n' "$STR_APP_RUN_START" >> "${APP_DIR}/AppRun"
-printf '\n' >> "${APP_DIR}/AppRun"
-printf '# CORRECCIÓN: Añadimos nuestra ruta al LD_LIBRARY_PATH existente\n' >> "${APP_DIR}/AppRun"
-printf 'export LD_LIBRARY_PATH="${APPIMAGE_DIR}/usr/lib:${LD_LIBRARY_PATH}"\n' >> "${APP_DIR}/AppRun"
-printf 'export DOSBOX_CONFIG="${APPIMAGE_DIR}/dosbox.conf"\n' >> "${APP_DIR}/AppRun"
-printf '\n' >> "${APP_DIR}/AppRun"
-printf 'exec "${APPIMAGE_DIR}/usr/bin/dosbox" -conf "${APPIMAGE_DIR}/dosbox.conf" -c "mount c . -t dir" -c "c:" -c "${GAME_EXEC}"\n' >> "${APP_DIR}/AppRun"
+cat << EOF > "${APP_DIR}/AppRun"
+#!/bin/bash
+set -e
+
+# Verificación de la extensión .suco al ejecutar el binario
+# Se usa la variable de entorno APPIMAGE para obtener el nombre del archivo contenedor.
+EXEC_NAME=\$(basename "\$APPIMAGE")
+if [[ ! "\$EXEC_NAME" =~ \.suco$ ]]; then
+    echo "Error: Este archivo debe ser ejecutado con la extensión '.suco'."
+    echo "Su nombre actual es '\$EXEC_NAME'. Por favor, renómbrelo para que termine en '.suco'."
+    exit 1
+fi
+
+APP_NAME="${APP_NAME}"
+GAME_EXEC="${GAME_EXEC}"
+INTERNAL_GAME_DIR="${INTERNAL_GAME_DIR}"
+PERSISTENT_DIR="\${HOME}/.local/share/${APP_NAME}"
+APPIMAGE_DIR="\$(dirname "\$0")"
+
+mkdir -p "\$PERSISTENT_DIR"
+echo "Sincronizando archivos del juego..."
+rsync -a --update "\${APPIMAGE_DIR}/${INTERNAL_GAME_DIR}/" "\$PERSISTENT_DIR/"
+cd "\$PERSISTENT_DIR"
+echo "Iniciando juego..."
+
+# CORRECCIÓN: Añadimos nuestra ruta al LD_LIBRARY_PATH existente
+export LD_LIBRARY_PATH="\${APPIMAGE_DIR}/usr/lib:\${LD_LIBRARY_PATH}"
+export DOSBOX_CONFIG="\${APPIMAGE_DIR}/dosbox.conf"
+
+exec "\${APPIMAGE_DIR}/usr/bin/dosbox" -conf "\${APPIMAGE_DIR}/dosbox.conf" -c "mount c . -t dir" -c "c:" -c "${GAME_EXEC}"
+EOF
 
 chmod +x "${APP_DIR}/AppRun"
 
@@ -438,7 +455,7 @@ else
     ./"$APPIMAGE_TOOL_PATH" -s "$APP_DIR" > /dev/null 2>&1
 fi
 
-FINAL_FILENAME="${APP_NAME}-x86_64.suco"
+FINAL_FILENAME="${SANITIZED_APP_NAME}-x86_64.suco"
 log_verbose "${STR_INFO_CREATING_OUTPUT_DIR}"
 mkdir -p "$FINAL_OUTPUT_DIR"
 mv "$SOURCE_APPIMAGE_FILENAME" "${FINAL_OUTPUT_DIR}/${FINAL_FILENAME}"
@@ -446,8 +463,6 @@ mv "$SOURCE_APPIMAGE_FILENAME" "${FINAL_OUTPUT_DIR}/${FINAL_FILENAME}"
 log_verbose "${STR_INFO_CLEANING_TEMP}"
 rm -rf "$APP_DIR"
 rm -rf "$PRECOMPILED_LIBS_DIR"
-# Se comenta la siguiente línea para mantener la caché de librerías .deb
-# rm -rf "$DEB_LIBS_DIR"
 
 if [ "$CLEANUP_TEMP_DIR" = true ]; then
     log_verbose "${STR_INFO_CLEANING_UNZIP}"
