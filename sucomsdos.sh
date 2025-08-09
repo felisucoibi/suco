@@ -42,8 +42,8 @@ PRECOMPILED_LIBS_DIR="${ASSETS_DIR}/precompiled-libs"
 if [[ $LANG == es* ]]; then
     STR_H1_VALIDATION="### Verificando requisitos..."
     STR_ERR_NO_PARAMS="Error: Faltan parámetros."
-    STR_USAGE="Uso: $0 \"Nombre Del Juego\" ComandoDeEjecucion"
-    STR_EXAMPLE="Ejemplo: $0 \"Doom 1\" DOOM.EXE"
+    STR_USAGE="Uso: $0 \"Nombre Del Juego\" [ComandoDeEjecucion]"
+    STR_EXAMPLE="Ejemplo: $0 \"Doom 1\" DOOM.EXE (o sin el segundo parámetro para elegir)"
     STR_ERR_NO_SOURCE="Error: No se encuentra ni la carpeta ni un archivo .zip para '$APP_NAME' en el directorio '$BASE_SOURCE_DIR'."
     STR_INFO_EXPECTED_PATH="Se esperaba encontrar:"
     STR_ERR_EMPTY_FOLDER="Error: La carpeta de origen del juego está vacía."
@@ -83,11 +83,20 @@ if [[ $LANG == es* ]]; then
     STR_FINAL_READY="✅ Tu archivo está listo en la carpeta:"
     STR_FINAL_FILENAME="Nombre del archivo:"
     STR_FINAL_LAUNCHING="🚀 Ejecutando el juego para probar..."
+    # NUEVAS CADENAS DE TEXTO PARA LA SELECCIÓN
+    STR_INFO_NO_GAME_EXEC="El segundo parámetro (comando de ejecución) no fue proporcionado. Buscando ejecutables de DOS..."
+    STR_ERR_NO_EXECUTABLES="Error: No se encontraron ejecutables de DOS (.bat, .com, .exe) en el directorio del juego."
+    STR_CHOOSE_EXECUTABLE="Por favor, elige el archivo ejecutable a usar:"
+    STR_INVALID_CHOICE="Opción inválida. Por favor, elige un número de la lista."
+    STR_INFO_NO_PARAMS_CHOOSE_GAME="No se proporcionó ningún parámetro. Listando juegos disponibles..."
+    STR_ERR_NO_GAMES_FOUND="Error: No se encontraron juegos en el directorio '$BASE_SOURCE_DIR'."
+    STR_CHOOSE_GAME="Por favor, elige un juego de la lista para continuar:"
+    STR_INVALID_GAME_CHOICE="Opción inválida. Por favor, elige un número de la lista de juegos."
 else
     STR_H1_VALIDATION="### Checking requirements..."
     STR_ERR_NO_PARAMS="Error: Missing parameters."
-    STR_USAGE="Usage: $0 \"Game Name\" GameCommand"
-    STR_EXAMPLE="Example: $0 \"Doom 1\" DOOM.EXE"
+    STR_USAGE="Usage: $0 \"Game Name\" [GameCommand]"
+    STR_EXAMPLE="Example: $0 \"Doom 1\" DOOM.EXE (or without the second parameter to choose)"
     STR_ERR_NO_SOURCE="Error: Neither a directory nor a .zip file found for '$APP_NAME' in the '$BASE_SOURCE_DIR' directory."
     STR_INFO_EXPECTED_PATH="Expected to find either:"
     STR_ERR_EMPTY_FOLDER="Error: The game's source folder is empty."
@@ -104,13 +113,13 @@ else
     STR_INFO_DOWNLOAD_LICENSE="-> Downloading GPLv3 license text into '$ASSETS_DIR' folder..."
     STR_ERR_DOWNLOAD_FAILED="Error: Could not download the required assets. Check your internet connection and try again."
     STR_INFO_CLEANING="-> Cleaning up and creating folder structure..."
-    STR_H3_GENERATE="### Copiando y generando archivos..."
+    STR_H3_GENERATE="### Coping and generating files..."
     STR_INFO_FOUND_ZIP="-> .zip file found. Unzipping to a temporary folder..."
-    STR_INFO_COPYING_FILES="-> Copiando archivos del juego y DOSBox..."
-    STR_INFO_CREATING_CONFIG="-> Creando archivo de configuración de DOSBox..."
-    STR_INFO_CREATING_APP_RUN="-> Creando AppRun inteligente con lógica de persistencia..."
-    STR_INFO_CREATING_DESKTOP="-> Creando archivo .desktop..."
-    STR_INFO_ICON_FOUND="-> Icon '$ICON_NAME' found in '$ASSETS_DIR'. Copiando..."
+    STR_INFO_COPYING_FILES="-> Copying game files and DOSBox..."
+    STR_INFO_CREATING_CONFIG="-> Creating DOSBox configuration file..."
+    STR_INFO_CREATING_APP_RUN="-> Creating smart AppRun with persistence logic..."
+    STR_INFO_CREATING_DESKTOP="-> Creating .desktop file..."
+    STR_INFO_ICON_FOUND="-> Icon '$ICON_NAME' found in '$ASSETS_DIR'. Coping..."
     STR_WARN_NO_ICON="-> Warning: Icon '$ICON_NAME' not found in '$ASSETS_DIR' folder. It will be created without an icon."
     STR_INFO_CREATING_METADATA="-> Creating license metadata (AppStream)..."
     STR_INFO_COPYING_LICENSE="-> Copying license file from '$ASSETS_DIR'..."
@@ -126,16 +135,26 @@ else
     STR_FINAL_SUCCESS="### PROCESS COMPLETE! ###"
     STR_FINAL_READY="✅ Your file is ready in the folder:"
     STR_FINAL_FILENAME="Filename:"
-    STR_FINAL_LAUNCHING="🚀 Ejecutando el juego para probar..."
+    STR_FINAL_LAUNCHING="🚀 Running the game to test..."
+    # NUEVAS CADENAS DE TEXTO PARA LA SELECCIÓN
+    STR_INFO_NO_GAME_EXEC="The second parameter (execution command) was not provided. Searching for DOS executables..."
+    STR_ERR_NO_EXECUTABLES="Error: No DOS executables (.bat, .com, .exe) were found in the game directory."
+    STR_CHOOSE_EXECUTABLE="Please choose the executable file to use:"
+    STR_INVALID_CHOICE="Invalid choice. Please choose a number from the list."
+    STR_INFO_NO_PARAMS_CHOOSE_GAME="No parameters provided. Listing available games..."
+    STR_ERR_NO_GAMES_FOUND="Error: No games were found in the directory '$BASE_SOURCE_DIR'."
+    STR_CHOOSE_GAME="Please choose a game from the list to continue:"
+    STR_INVALID_GAME_CHOICE="Invalid choice. Please choose a number from the list of games."
 fi
 
 # --- OTHER CONFIGURATION VARIABLES ---
-APP_NAME="$1"
-GAME_EXEC="$2"
-GAME_SOURCE_DIR_PATH="${BASE_SOURCE_DIR}/${APP_NAME}"
-GAME_SOURCE_ZIP_PATH="${BASE_SOURCE_DIR}/${APP_NAME}.zip"
+# Las variables APP_NAME y GAME_EXEC se inicializarán más tarde
+APP_NAME=""
+GAME_EXEC="$2" # Se sigue tomando el segundo parámetro para la validación posterior
+GAME_SOURCE_DIR_PATH=""
+GAME_SOURCE_ZIP_PATH=""
 CONFIG_NAME="dosbox.conf"
-APP_DIR="${APP_NAME}.AppDir"
+APP_DIR=""
 FINAL_OUTPUT_DIR="$MAIN_GAMES_DIR"
 APPIMAGE_TOOL_PATH="${ASSETS_DIR}/${APPIMAGE_TOOL_NAME}"
 LICENSE_FILE_PATH="${ASSETS_DIR}/${LICENSE_FILE_NAME}"
@@ -165,31 +184,31 @@ download_and_extract_libs() {
 
     SDL_REPO_URL="http://deb.debian.org/debian/pool/main/libs/libsdl1.2"
     if [ ! -f "${DEB_LIBS_DIR}/${SDL_DEB_PACKAGE}" ] || [ ! -s "${DEB_LIBS_DIR}/${SDL_DEB_PACKAGE}" ]; then
-        log_verbose "   -> Descargando ${SDL_DEB_PACKAGE}..."
+        log_verbose "    -> Descargando ${SDL_DEB_PACKAGE}..."
         wget -O "${DEB_LIBS_DIR}/${SDL_DEB_PACKAGE}" "${SDL_REPO_URL}/${SDL_DEB_PACKAGE}"
     fi
 
     SDL_SOUND_REPO_URL="http://deb.debian.org/debian/pool/main/s/sdl-sound1.2"
     if [ ! -f "${DEB_LIBS_DIR}/${SDL_SOUND_DEB_PACKAGE}" ] || [ ! -s "${DEB_LIBS_DIR}/${SDL_SOUND_DEB_PACKAGE}" ]; then
-        log_verbose "   -> Descargando ${SDL_SOUND_DEB_PACKAGE}..."
+        log_verbose "    -> Descargando ${SDL_SOUND_DEB_PACKAGE}..."
         wget -O "${DEB_LIBS_DIR}/${SDL_SOUND_DEB_PACKAGE}" "${SDL_SOUND_REPO_URL}/${SDL_SOUND_DEB_PACKAGE}"
     fi
     
     SDL_NET_REPO_URL="http://deb.debian.org/debian/pool/main/s/sdl-net1.2"
     if [ ! -f "${DEB_LIBS_DIR}/${SDL_NET_DEB_PACKAGE}" ] || [ ! -s "${DEB_LIBS_DIR}/${SDL_NET_DEB_PACKAGE}" ]; then
-        log_verbose "   -> Descargando ${SDL_NET_DEB_PACKAGE}..."
+        log_verbose "    -> Descargando ${SDL_NET_DEB_PACKAGE}..."
         wget -O "${DEB_LIBS_DIR}/${SDL_NET_DEB_PACKAGE}" "${SDL_NET_REPO_URL}/${SDL_NET_DEB_PACKAGE}"
     fi
 
     MIKMOD_REPO_URL="http://deb.debian.org/debian/pool/main/libm/libmikmod"
     if [ ! -f "${DEB_LIBS_DIR}/${MIKMOD_DEB_PACKAGE}" ] || [ ! -s "${DEB_LIBS_DIR}/${MIKMOD_DEB_PACKAGE}" ]; then
-        log_verbose "   -> Descargando ${MIKMOD_DEB_PACKAGE}..."
+        log_verbose "    -> Descargando ${MIKMOD_DEB_PACKAGE}..."
         wget -O "${DEB_LIBS_DIR}/${MIKMOD_DEB_PACKAGE}" "${MIKMOD_REPO_URL}/${MIKMOD_DEB_PACKAGE}"
     fi
     
     FLAC_REPO_URL="http://deb.debian.org/debian/pool/main/f/flac"
     if [ ! -f "${DEB_LIBS_DIR}/${FLAC_DEB_PACKAGE}" ] || [ ! -s "${DEB_LIBS_DIR}/${FLAC_DEB_PACKAGE}" ]; then
-        log_verbose "   -> Descargando ${FLAC_DEB_PACKAGE}..."
+        log_verbose "    -> Descargando ${FLAC_DEB_PACKAGE}..."
         wget -O "${DEB_LIBS_DIR}/${FLAC_DEB_PACKAGE}" "${FLAC_REPO_URL}/${FLAC_DEB_PACKAGE}"
     fi
     
@@ -198,7 +217,7 @@ download_and_extract_libs() {
         exit 1
     fi
 
-    log_verbose "   -> Extrayendo bibliotecas..."
+    log_verbose "    -> Extrayendo bibliotecas..."
     
     extract_and_verify() {
         local deb_file="$1"
@@ -211,8 +230,8 @@ download_and_extract_libs() {
         
         local files_extracted=$(find "$precompiled_dir" -maxdepth 1 -name "${lib_name_pattern}" | wc -l)
         if [ "$files_extracted" -eq 0 ]; then
-             echo -e "${RED}Error de extracción: ${lib_name_pattern} binario no extraído correctamente.${NC}"
-             exit 1
+            echo -e "${RED}Error de extracción: ${lib_name_pattern} binario no extraído correctamente.${NC}"
+            exit 1
         fi
     }
 
@@ -222,7 +241,7 @@ download_and_extract_libs() {
     extract_and_verify "${DEB_LIBS_DIR}/${MIKMOD_DEB_PACKAGE}" "libmikmod.so.3*" "$temp_dir" "$PRECOMPILED_LIBS_DIR"
     extract_and_verify "${DEB_LIBS_DIR}/${FLAC_DEB_PACKAGE}" "libFLAC.so.12*" "$temp_dir" "$PRECOMPILED_LIBS_DIR"
 
-    log_verbose "   -> Las bibliotecas se extrajeron correctamente a '$PRECOMPILED_LIBS_DIR'."
+    log_verbose "    -> Las bibliotecas se extrajeron correctamente a '$PRECOMPILED_LIBS_DIR'."
     
     rm -rf "$temp_dir"
 }
@@ -255,12 +274,40 @@ copy_dosbox_with_libs() {
     fi
 }
 
-# --- 2. INPUT VALIDATION ---
+# --- 2. INPUT VALIDATION & SOURCE SETUP ---
+if [ -z "$1" ]; then
+    echo -e "${YELLOW}${STR_INFO_NO_PARAMS_CHOOSE_GAME}${NC}"
+    
+    mapfile -t games_raw < <(find "$BASE_SOURCE_DIR" -maxdepth 1 -mindepth 1 \( -type d ! -name "$ASSETS_DIR" ! -name "$MAIN_GAMES_DIR" -o -type f -iname "*.zip" \) -printf "%f\n")
+    
+    declare -a games_clean
+    for game in "${games_raw[@]}"; do
+        games_clean+=("$(basename -s .zip "$game")")
+    done
+
+    if [ ${#games_clean[@]} -eq 0 ]; then
+        echo -e "${RED}${STR_ERR_NO_GAMES_FOUND}${NC}"
+        exit 1
+    fi
+    
+    echo -e "${YELLOW}${STR_CHOOSE_GAME}${NC}"
+    select choice in "${games_clean[@]}"; do
+        if [ -n "$choice" ]; then
+            APP_NAME="$choice"
+            echo -e "Has elegido: ${GREEN}${APP_NAME}${NC}"
+            break
+        else
+            echo -e "${RED}${STR_INVALID_GAME_CHOICE}${NC}"
+        fi
+    done
+else
+    APP_NAME="$1"
+fi
+APP_DIR="${APP_NAME}.AppDir"
+
+# Si solo se pasó un parámetro, GAME_EXEC sigue vacío y se pide.
 if [ -z "$2" ]; then
-    echo -e "${RED}${STR_ERR_NO_PARAMS}${NC}"
-    echo "${STR_USAGE}"
-    echo "${STR_EXAMPLE}"
-    exit 1
+    GAME_EXEC=""
 fi
 
 # --- 3. DEPENDENCY AND SOURCE CHECKS ---
@@ -281,6 +328,10 @@ if ! command -v wget &> /dev/null; then echo -e "${RED}${STR_ERR_NO_WGET}${NC}";
 if ! command -v rsync &> /dev/null; then echo -e "${RED}${STR_ERR_NO_RSYNC}${NC}"; exit 1; fi
 if ! command -v unzip &> /dev/null; then echo -e "${RED}${STR_ERR_NO_UNZIP}${NC}"; exit 1; fi
 if ! command -v ar &> /dev/null; then echo -e "${RED}${STR_ERR_NO_AR}${NC}"; exit 1; fi
+
+# --- IMPORTANTE: Se ha movido este bloque. Ahora se determina la ruta del juego ANTES de buscar ejecutables.
+GAME_SOURCE_DIR_PATH="${BASE_SOURCE_DIR}/${APP_NAME}"
+GAME_SOURCE_ZIP_PATH="${BASE_SOURCE_DIR}/${APP_NAME}.zip"
 
 if [ -d "$GAME_SOURCE_DIR_PATH" ]; then
     EFFECTIVE_SOURCE_PATH="$GAME_SOURCE_DIR_PATH"
@@ -310,6 +361,32 @@ if [ -z "$(ls -A "$EFFECTIVE_SOURCE_PATH")" ]; then
     if [ "$CLEANUP_TEMP_DIR" = true ]; then rm -rf "$EFFECTIVE_SOURCE_PATH"; fi
     exit 1
 fi
+
+# --- AHORA QUE LA RUTA ESTÁ DEFINIDA, PODEMOS BUSCAR EJECUTABLES ---
+if [ -z "$GAME_EXEC" ]; then
+    echo -e "${YELLOW}${STR_INFO_NO_GAME_EXEC}${NC}"
+    
+    # LÍNEA CORREGIDA PARA ENCONTRAR EJECUTABLES
+    mapfile -t executables < <(find "$EFFECTIVE_SOURCE_PATH" -maxdepth 1 -type f -printf "%f\n" | grep -iE '\.(exe|com|bat)$')
+
+    if [ ${#executables[@]} -eq 0 ]; then
+        echo -e "${RED}${STR_ERR_NO_EXECUTABLES}${NC}"
+        if [ "$CLEANUP_TEMP_DIR" = true ]; then rm -rf "$EFFECTIVE_SOURCE_PATH"; fi
+        exit 1
+    fi
+
+    echo -e "${YELLOW}${STR_CHOOSE_EXECUTABLE}${NC}"
+    select choice in "${executables[@]}"; do
+        if [ -n "$choice" ]; then
+            GAME_EXEC="$choice"
+            echo -e "Has elegido: ${GREEN}${GAME_EXEC}${NC}"
+            break
+        else
+            echo -e "${RED}${STR_INVALID_CHOICE}${NC}"
+        fi
+    done
+fi
+
 echo -e "${GREEN}${STR_OK_REQS_VERIFIED}${NC}"
 
 # --- 4. PREPARE ENVIRONMENT ---
@@ -388,10 +465,10 @@ PERSISTENT_DIR="\${HOME}/.local/share/${APP_NAME}"
 APPIMAGE_DIR="\$(dirname "\$0")"
 
 mkdir -p "\$PERSISTENT_DIR"
-echo "Sincronizando archivos del juego..."
+echo "${STR_APP_RUN_SYNC}"
 rsync -a --update "\${APPIMAGE_DIR}/${INTERNAL_GAME_DIR}/" "\$PERSISTENT_DIR/"
 cd "\$PERSISTENT_DIR"
-echo "Iniciando juego..."
+echo "${STR_APP_RUN_START}"
 
 # CORRECCIÓN: Añadimos nuestra ruta al LD_LIBRARY_PATH existente
 export LD_LIBRARY_PATH="\${APPIMAGE_DIR}/usr/lib:\${LD_LIBRARY_PATH}"
