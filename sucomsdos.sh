@@ -442,6 +442,7 @@ scaler=normal3x
 mount c .
 c:
 ${GAME_EXEC}
+exit
 EOF
 
 log_verbose "${STR_INFO_CREATING_APP_RUN}"
@@ -474,7 +475,7 @@ echo "${STR_APP_RUN_START}"
 export LD_LIBRARY_PATH="\${APPIMAGE_DIR}/usr/lib:\${LD_LIBRARY_PATH}"
 export DOSBOX_CONFIG="\${APPIMAGE_DIR}/dosbox.conf"
 
-exec "\${APPIMAGE_DIR}/usr/bin/dosbox" -conf "\${APPIMAGE_DIR}/dosbox.conf" -c "mount c . -t dir" -c "c:" -c "${GAME_EXEC}"
+exec "\${APPIMAGE_DIR}/usr/bin/dosbox" -conf "\${APPIMAGE_DIR}/dosbox.conf"
 EOF
 
 chmod +x "${APP_DIR}/AppRun"
