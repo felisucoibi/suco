@@ -83,10 +83,11 @@ if [[ $LANG == es* ]]; then
     STR_FINAL_READY="✅ Tu archivo está listo en la carpeta:"
     STR_FINAL_FILENAME="Nombre del archivo:"
     STR_FINAL_LAUNCHING="🚀 Ejecutando el juego para probar..."
-    # NUEVAS CADENAS DE TEXTO PARA LA SELECCIÓN
+    # CADENAS DE TEXTO PARA LA SELECCIÓN
     STR_INFO_NO_GAME_EXEC="El segundo parámetro (comando de ejecución) no fue proporcionado. Buscando ejecutables de DOS..."
     STR_ERR_NO_EXECUTABLES="Error: No se encontraron ejecutables de DOS (.bat, .com, .exe) en el directorio del juego."
     STR_CHOOSE_EXECUTABLE="Por favor, elige el archivo ejecutable a usar:"
+    STR_INFO_AUTOSELECT_EXEC="-> Se ha encontrado un único ejecutable, seleccionándolo automáticamente:"
     STR_INVALID_CHOICE="Opción inválida. Por favor, elige un número de la lista."
     STR_INFO_NO_PARAMS_CHOOSE_GAME="No se proporcionó ningún parámetro. Listando juegos disponibles..."
     STR_ERR_NO_GAMES_FOUND="Error: No se encontraron juegos en el directorio '$BASE_SOURCE_DIR'."
@@ -136,10 +137,11 @@ else
     STR_FINAL_READY="✅ Your file is ready in the folder:"
     STR_FINAL_FILENAME="Filename:"
     STR_FINAL_LAUNCHING="🚀 Running the game to test..."
-    # NUEVAS CADENAS DE TEXTO PARA LA SELECCIÓN
+    # STRINGS FOR SELECTION
     STR_INFO_NO_GAME_EXEC="The second parameter (execution command) was not provided. Searching for DOS executables..."
     STR_ERR_NO_EXECUTABLES="Error: No DOS executables (.bat, .com, .exe) were found in the game directory."
     STR_CHOOSE_EXECUTABLE="Please choose the executable file to use:"
+    STR_INFO_AUTOSELECT_EXEC="-> Found a single executable, selecting it automatically:"
     STR_INVALID_CHOICE="Invalid choice. Please choose a number from the list."
     STR_INFO_NO_PARAMS_CHOOSE_GAME="No parameters provided. Listing available games..."
     STR_ERR_NO_GAMES_FOUND="Error: No games were found in the directory '$BASE_SOURCE_DIR'."
@@ -148,9 +150,8 @@ else
 fi
 
 # --- OTHER CONFIGURATION VARIABLES ---
-# Las variables APP_NAME y GAME_EXEC se inicializarán más tarde
 APP_NAME=""
-GAME_EXEC="$2" # Se sigue tomando el segundo parámetro para la validación posterior
+GAME_EXEC="$2"
 GAME_SOURCE_DIR_PATH=""
 GAME_SOURCE_ZIP_PATH=""
 CONFIG_NAME="dosbox.conf"
@@ -180,7 +181,8 @@ download_and_extract_libs() {
     log_verbose "${STR_INFO_DOWNLOAD_LIBS}"
     mkdir -p "$DEB_LIBS_DIR"
     mkdir -p "$PRECOMPILED_LIBS_DIR"
-    local temp_dir=$(mktemp -d)
+    local temp_dir
+    temp_dir=$(mktemp -d)
 
     SDL_REPO_URL="http://deb.debian.org/debian/pool/main/libs/libsdl1.2"
     if [ ! -f "${DEB_LIBS_DIR}/${SDL_DEB_PACKAGE}" ] || [ ! -s "${DEB_LIBS_DIR}/${SDL_DEB_PACKAGE}" ]; then
@@ -228,7 +230,8 @@ download_and_extract_libs() {
         ar x "${deb_file}" data.tar.xz --output="$temp_dir_path"
         tar --wildcards -xf "$temp_dir_path/data.tar.xz" --strip-components=4 -C "$precompiled_dir" "./usr/lib/x86_64-linux-gnu/${lib_name_pattern}"
         
-        local files_extracted=$(find "$precompiled_dir" -maxdepth 1 -name "${lib_name_pattern}" | wc -l)
+        local files_extracted
+        files_extracted=$(find "$precompiled_dir" -maxdepth 1 -name "${lib_name_pattern}" | wc -l)
         if [ "$files_extracted" -eq 0 ]; then
             echo -e "${RED}Error de extracción: ${lib_name_pattern} binario no extraído correctamente.${NC}"
             exit 1
@@ -305,7 +308,6 @@ else
 fi
 APP_DIR="${APP_NAME}.AppDir"
 
-# Si solo se pasó un parámetro, GAME_EXEC sigue vacío y se pide.
 if [ -z "$2" ]; then
     GAME_EXEC=""
 fi
@@ -329,7 +331,6 @@ if ! command -v rsync &> /dev/null; then echo -e "${RED}${STR_ERR_NO_RSYNC}${NC}
 if ! command -v unzip &> /dev/null; then echo -e "${RED}${STR_ERR_NO_UNZIP}${NC}"; exit 1; fi
 if ! command -v ar &> /dev/null; then echo -e "${RED}${STR_ERR_NO_AR}${NC}"; exit 1; fi
 
-# --- IMPORTANTE: Se ha movido este bloque. Ahora se determina la ruta del juego ANTES de buscar ejecutables.
 GAME_SOURCE_DIR_PATH="${BASE_SOURCE_DIR}/${APP_NAME}"
 GAME_SOURCE_ZIP_PATH="${BASE_SOURCE_DIR}/${APP_NAME}.zip"
 
@@ -362,29 +363,31 @@ if [ -z "$(ls -A "$EFFECTIVE_SOURCE_PATH")" ]; then
     exit 1
 fi
 
-# --- AHORA QUE LA RUTA ESTÁ DEFINIDA, PODEMOS BUSCAR EJECUTABLES ---
+# --- LÓGICA DE SELECCIÓN DE EJECUTABLE ---
 if [ -z "$GAME_EXEC" ]; then
     echo -e "${YELLOW}${STR_INFO_NO_GAME_EXEC}${NC}"
     
-    # LÍNEA CORREGIDA PARA ENCONTRAR EJECUTABLES
     mapfile -t executables < <(find "$EFFECTIVE_SOURCE_PATH" -maxdepth 1 -type f -printf "%f\n" | grep -iE '\.(exe|com|bat)$')
 
     if [ ${#executables[@]} -eq 0 ]; then
         echo -e "${RED}${STR_ERR_NO_EXECUTABLES}${NC}"
         if [ "$CLEANUP_TEMP_DIR" = true ]; then rm -rf "$EFFECTIVE_SOURCE_PATH"; fi
         exit 1
+    elif [ ${#executables[@]} -eq 1 ]; then
+        GAME_EXEC="${executables[0]}"
+        echo -e "${YELLOW}${STR_INFO_AUTOSELECT_EXEC}${NC} ${GREEN}${GAME_EXEC}${NC}"
+    else
+        echo -e "${YELLOW}${STR_CHOOSE_EXECUTABLE}${NC}"
+        select choice in "${executables[@]}"; do
+            if [ -n "$choice" ]; then
+                GAME_EXEC="$choice"
+                echo -e "Has elegido: ${GREEN}${GAME_EXEC}${NC}"
+                break
+            else
+                echo -e "${RED}${STR_INVALID_CHOICE}${NC}"
+            fi
+        done
     fi
-
-    echo -e "${YELLOW}${STR_CHOOSE_EXECUTABLE}${NC}"
-    select choice in "${executables[@]}"; do
-        if [ -n "$choice" ]; then
-            GAME_EXEC="$choice"
-            echo -e "Has elegido: ${GREEN}${GAME_EXEC}${NC}"
-            break
-        else
-            echo -e "${RED}${STR_INVALID_CHOICE}${NC}"
-        fi
-    done
 fi
 
 echo -e "${GREEN}${STR_OK_REQS_VERIFIED}${NC}"
@@ -471,11 +474,13 @@ rsync -a --update "\${APPIMAGE_DIR}/${INTERNAL_GAME_DIR}/" "\$PERSISTENT_DIR/"
 cd "\$PERSISTENT_DIR"
 echo "${STR_APP_RUN_START}"
 
-# CORRECCIÓN: Añadimos nuestra ruta al LD_LIBRARY_PATH existente
+# Añadimos nuestra ruta al LD_LIBRARY_PATH existente
 export LD_LIBRARY_PATH="\${APPIMAGE_DIR}/usr/lib:\${LD_LIBRARY_PATH}"
 export DOSBOX_CONFIG="\${APPIMAGE_DIR}/dosbox.conf"
 
-exec "\${APPIMAGE_DIR}/usr/bin/dosbox" -conf "\${APPIMAGE_DIR}/dosbox.conf"
+# Se elimina 'exec' para evitar que el script reemplace su propio proceso,
+# lo que podría cerrar la terminal que lo ejecuta.
+"\${APPIMAGE_DIR}/usr/bin/dosbox" -conf "\${APPIMAGE_DIR}/dosbox.conf"
 EOF
 
 chmod +x "${APP_DIR}/AppRun"
